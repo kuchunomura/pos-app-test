@@ -2359,8 +2359,9 @@ function doSync(mode){
 
 // GETでデータ送信（POSTリダイレクト問題を回避）
 async function gasGet(url, data){
-  var qs='?d='+encodeURIComponent(JSON.stringify(data));
-  var res=await fetch(url+qs,{method:'GET',redirect:'follow'});
+  // 日本語商品名でURLが長くなるのでPOSTで送信
+  var body='d='+encodeURIComponent(JSON.stringify(data));
+  var res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body,redirect:'follow'});
   try{return await res.json();}catch(e){return null;}
 }
 
