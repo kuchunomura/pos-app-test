@@ -700,7 +700,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
     <div style="font-size:13px;color:#666;margin-bottom:20px;line-height:1.5;">カートが空です。この取引履歴を削除してタブを移動しますか？</div>
     <div style="display:flex;flex-direction:column;gap:8px;">
       <button onclick="confirmDeleteAndSwitch()" style="padding:12px;border-radius:8px;border:none;background:#e53935;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">取引履歴を削除してタブを移動</button>
-      <button onclick="closeEditCancelPopup()" style="padding:12px;border-radius:8px;border:1px solid #ccc;background:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:#333;">カートに戻って商品を追加</button>
+      <button onclick="closeEditCancelPopup()" style="padding:12px;border-radius:8px;border:1px solid #ccc;background:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:#333;">カートに戻って取引履歴を修正</button>
     </div>
   </div>
 </div>
@@ -2219,6 +2219,17 @@ function closeEditCancelPopup(){
   var pop=document.getElementById('edit-cancel-popup');
   if(pop) pop.style.display='none';
   _editCancelPendingTab=null;
+  // 元の取引をカートに復元
+  if(editingSaleId){
+    var record=sales.find(function(s){return s.id===editingSaleId;});
+    if(record){
+      cart=record.items.map(function(i){return Object.assign({},i);});
+      selectedAttrs=Object.assign({},record.attrs);
+      activeDiscount=record.discount||'';
+      recalcCartPrices();
+      renderCart();renderAttrs();renderDiscountBar();
+    }
+  }
 }
 
 function localDateStr(d){
