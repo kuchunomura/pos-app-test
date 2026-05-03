@@ -869,6 +869,17 @@ const DEFAULT_ITEMS = [
 ];
 
 let cats = ld(KEYS.cats) || DEFAULT_CATS;
+// cat_uketsukeをcat_petの直後に移動（localStorage古い順序を修正）
+(function(){
+  var ui=cats.findIndex(function(c){return c.id==='cat_uketsuke';});
+  var pi=cats.findIndex(function(c){return c.id==='cat_pet';});
+  if(ui>-1&&pi>-1&&ui!==pi+1){
+    var u=cats.splice(ui,1)[0];
+    var pi2=cats.findIndex(function(c){return c.id==='cat_pet';});
+    cats.splice(pi2+1,0,u);
+    sv(KEYS.cats,cats);
+  }
+})();
 let items = ld(KEYS.items) || DEFAULT_ITEMS;
 let sales = ld(KEYS.sales) || [];
 // 既存売上データにデバイスIDを補完（初回のみ）
