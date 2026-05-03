@@ -693,6 +693,18 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 
 <div class="toast" id="toast"></div>
 
+<!-- 修正モード離脱確認ポップアップ -->
+<div id="edit-cancel-popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;padding:24px 20px;max-width:300px;width:88%;text-align:center;">
+    <div style="font-size:16px;font-weight:700;margin-bottom:8px;color:#333;">取引修正モードです</div>
+    <div style="font-size:13px;color:#666;margin-bottom:20px;line-height:1.5;">カートが空です。この取引履歴を削除してタブを移動しますか？</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button onclick="confirmDeleteAndSwitch()" style="padding:12px;border-radius:8px;border:none;background:#e53935;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">取引履歴を削除してタブを移動</button>
+      <button onclick="closeEditCancelPopup()" style="padding:12px;border-radius:8px;border:1px solid #ccc;background:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:#333;">カートに戻って商品を追加</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ===== バージョン種別（main / test） =====
 const APP_VERSION_TYPE = 'main';
@@ -914,6 +926,7 @@ let itemOrder = ld(KEYS.itemOrder) || null;
 let catOrder = ld(KEYS.catOrder) || null;
 let lastSaleId = null;
 let editingSaleId = null; // カートで修正中の元売上ID
+var _editCancelPendingTab = null; // 修正モード離脱確認ポップアップ用：移動先タブ
 const WEATHER_OPTIONS = [
   {key:'sunny', icon:'☀️', label:'晴れ'},
   {key:'cloudy', icon:'☁️', label:'曇り'},
@@ -941,7 +954,13 @@ let activeHoldIdx = 0; // 現在表示中の保留スロット
 
 // ===== タブ切替 =====
 function switchTab(t) {
-  // POSタブから離れる際、修正中フラグをクリア（元売上はsalesに残る）
+  // 修正モード中カートが空の状態でタブ移動しようとした → 削除確認ポップアップ
+  if(t!=='pos' && editingSaleId && cart.length===0){
+    _editCancelPendingTab=t;
+    var pop=document.getElementById('edit-cancel-popup');
+    if(pop) pop.style.display='flex';
+    return;
+  }
   if(t!=='pos') editingSaleId=null;
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tabbar button').forEach((el,i) => {
@@ -1464,7 +1483,19 @@ function renderCart(){
 function chgQty(idx,d){cart[idx].qty=Math.max(1,cart[idx].qty+d);renderCart();}
 function removeCart(idx){cart.splice(idx,1);recalcCartPrices();renderPOS();renderCart();}
 function clearCart(){
-  editingSaleId=null; // 修正キャンセル（元売上はsalesに残る）
+  if(editingSaleId){
+    // 修正モード中はeditingSaleIdを保持（タブ切り替え時に削除確認できるように）
+    holds[activeHoldIdx]=null;
+    sv(KEYS.holds,holds);
+    cart=[];selectedAttrs={age:[],nationality:[]};activeDiscount='';
+    attrVisible=false;
+    var ai2=document.getElementById('attr-rows-inner'),ab2=document.getElementById('toggle-attr-btn');
+    if(ai2) ai2.style.display='none';
+    if(ab2) ab2.textContent='▲';
+    renderCart();renderAttrs();renderDiscountBar();renderPOS();renderHoldTabs();
+    return;
+  }
+  editingSaleId=null;
   holds[activeHoldIdx]=null;
   sv(KEYS.holds,holds);
   cart=[];selectedAttrs={age:[],nationality:[]};activeDiscount='';
@@ -2164,6 +2195,28 @@ function editSaleRecord(id){
   switchTab('pos');
   renderCart();renderAttrs();renderDiscountBar();
   showToast('✓ カートに戻しました。修正後に再決済してください');
+}
+
+// 修正モード離脱確認ポップアップ：「取引履歴を削除してタブを移動」ボタン
+function confirmDeleteAndSwitch(){
+  var id=editingSaleId;
+  if(id){
+    sales=sales.filter(function(s){return s.id!==id;});
+    sv(KEYS.sales,sales);
+    autoDeleteSale(id);
+    editingSaleId=null;
+  }
+  var pop=document.getElementById('edit-cancel-popup');
+  if(pop) pop.style.display='none';
+  var t=_editCancelPendingTab;
+  _editCancelPendingTab=null;
+  if(t) switchTab(t);
+}
+// 修正モード離脱確認ポップアップ：「カートに戻って商品を追加」ボタン
+function closeEditCancelPopup(){
+  var pop=document.getElementById('edit-cancel-popup');
+  if(pop) pop.style.display='none';
+  _editCancelPendingTab=null;
 }
 
 function localDateStr(d){
