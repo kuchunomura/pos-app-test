@@ -700,6 +700,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
     <div style="font-size:13px;color:#666;margin-bottom:20px;line-height:1.5;">カートが空です。この取引履歴を削除してタブを移動しますか？</div>
     <div style="display:flex;flex-direction:column;gap:8px;">
       <button onclick="confirmDeleteAndSwitch()" style="padding:12px;border-radius:8px;border:none;background:#e53935;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">取引履歴を削除してタブを移動</button>
+      <button onclick="returnToSalesWithRestore()" style="padding:12px;border-radius:8px;border:none;background:#1976d2;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">取引明細に戻る（履歴を復元）</button>
       <button onclick="closeEditCancelPopup()" style="padding:12px;border-radius:8px;border:1px solid #ccc;background:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;color:#333;">カートに戻って取引履歴を修正</button>
     </div>
   </div>
@@ -929,6 +930,7 @@ let catOrder = ld(KEYS.catOrder) || null;
 let lastSaleId = null;
 let editingSaleId = null; // カートで修正中の元売上ID
 var _editCancelPendingTab = null; // 修正モード離脱確認ポップアップ用：移動先タブ
+var _keepEditState = false; // switchTab時にeditingSaleIdを保持するフラグ
 const WEATHER_OPTIONS = [
   {key:'sunny', icon:'☀️', label:'晴れ'},
   {key:'cloudy', icon:'☁️', label:'曇り'},
@@ -963,7 +965,8 @@ function switchTab(t) {
     if(pop) pop.style.display='flex';
     return;
   }
-  if(t!=='pos') editingSaleId=null;
+  if(t!=='pos' && !_keepEditState) editingSaleId=null;
+  _keepEditState=false;
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tabbar button').forEach((el,i) => {
     el.classList.toggle('active', ['pos','timer','sales','settings-pos'][i] === t);
@@ -2214,7 +2217,25 @@ function confirmDeleteAndSwitch(){
   _editCancelPendingTab=null;
   if(t) switchTab(t);
 }
-// 修正モード離脱確認ポップアップ：「カートに戻って商品を追加」ボタン
+// 修正モード離脱確認ポップアップ：「取引明細に戻る（履歴を復元）」ボタン
+function returnToSalesWithRestore(){
+  var pop=document.getElementById('edit-cancel-popup');
+  if(pop) pop.style.display='none';
+  _editCancelPendingTab=null;
+  // 元の取引をカートに復元（editingSaleIdは保持）
+  if(editingSaleId){
+    var record=sales.find(function(s){return s.id===editingSaleId;});
+    if(record){
+      cart=record.items.map(function(i){return Object.assign({},i);});
+      selectedAttrs=Object.assign({},record.attrs);
+      activeDiscount=record.discount||'';
+      recalcCartPrices();
+    }
+  }
+  _keepEditState=true; // editingSaleIdを保持したまま売上タブへ
+  switchTab('sales');
+}
+// 修正モード離脱確認ポップアップ：「カートに戻って取引履歴を修正」ボタン
 function closeEditCancelPopup(){
   var pop=document.getElementById('edit-cancel-popup');
   if(pop) pop.style.display='none';
