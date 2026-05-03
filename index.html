@@ -880,11 +880,8 @@ const DEFAULT_ITEMS = [
   {id:'i_b20', name:'寝袋（冬用）',        price:1000,cat:'cat_rental',stock:2, free_mura:false},
 ];
 
-// main用GAS URLが残っている場合はtest用に自動修正
-(function(){
-  var mainUrl='https://script.google.com/macros/s/AKfycbz2oz3hTdemYeN2hsFoTDAsu1lv7JCbNV2JPCxRm0kCVShmfe6qYmX_byHy6QxJ8YfF/exec';
-  if(ld(KEYS.gas)===mainUrl) sv(KEYS.gas,DEFAULT_GAS_URL);
-})();
+// 常にtest用GAS URLを強制固定
+sv(KEYS.gas, DEFAULT_GAS_URL);
 let cats = ld(KEYS.cats) || DEFAULT_CATS;
 // cat_uketsukeをcat_petの直後に移動（localStorage古い順序を修正）
 (function(){
