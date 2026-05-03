@@ -2359,9 +2359,8 @@ function doSync(mode){
 
 // GETでデータ送信（POSTリダイレクト問題を回避）
 async function gasGet(url, data){
-  // no-corsでCORSエラーを回避してPOST送信（レスポンスは読まない）
-  var body='d='+encodeURIComponent(JSON.stringify(data));
-  await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body});
+  var qs='?d='+encodeURIComponent(JSON.stringify(data));
+  await fetch(url+qs,{method:'GET',mode:'no-cors'});
 }
 
 // 実際の同期処理
