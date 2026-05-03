@@ -2360,7 +2360,8 @@ function doSync(mode){
 // GETでデータ送信（POSTリダイレクト問題を回避）
 async function gasGet(url, data){
   var qs='?d='+encodeURIComponent(JSON.stringify(data));
-  await fetch(url+qs,{method:'GET'});
+  var res=await fetch(url+qs,{method:'GET',redirect:'follow'});
+  try{return await res.json();}catch(e){return null;}
 }
 
 // 実際の同期処理
@@ -2386,24 +2387,25 @@ async function syncSales(){ doSync('all'); }
 
 // 決済ごとに自動送信（新規）
 async function autoSyncSale(sale){
-  const url=(ld(KEYS.gas)||DEFAULT_GAS_URL)||'';
+  const url=DEFAULT_GAS_URL; // test版: 常にDEFAULT_GAS_URLを使用
   if(!url) return;
   try{
-    await gasGet(url,{type:'add_rows',rows:saleToRows(sale)});
-  }catch(e){}
+    const res=await gasGet(url,{type:'add_rows',rows:saleToRows(sale)});
+    if(res&&res.status&&res.status!=='ok') showToast('⚠ GAS: '+res.status+' '+(res.msg||''),'#c00',6000);
+  }catch(e){showToast('⚠ GAS同期エラー: '+e.message,'#c00',6000);}
 }
 
 // ポップアップで変更した売上を再送（replace）
 async function autoSyncUpdatedSale(sale){
-  const url=(ld(KEYS.gas)||DEFAULT_GAS_URL)||'';
+  const url=DEFAULT_GAS_URL;
   if(!url) return;
   try{
     await gasGet(url,{type:'replace_rows',sale_id:sale.id,rows:saleToRows(sale)});
-  }catch(e){}
+  }catch(e){showToast('⚠ GAS同期エラー: '+e.message,'#c00',6000);}
 }
 
 async function autoDeleteSale(saleId){
-  const url=(ld(KEYS.gas)||DEFAULT_GAS_URL)||'';
+  const url=DEFAULT_GAS_URL;
   if(!url) return;
   try{
     await gasGet(url,{type:'delete_rows',sale_id:saleId});
