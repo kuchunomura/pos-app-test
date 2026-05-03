@@ -2359,10 +2359,9 @@ function doSync(mode){
 
 // GETでデータ送信（POSTリダイレクト問題を回避）
 async function gasGet(url, data){
-  // 日本語商品名でURLが長くなるのでPOSTで送信
+  // no-corsでCORSエラーを回避してPOST送信（レスポンスは読まない）
   var body='d='+encodeURIComponent(JSON.stringify(data));
-  var res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body,redirect:'follow'});
-  try{return await res.json();}catch(e){return null;}
+  await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body});
 }
 
 // 実際の同期処理
@@ -2388,12 +2387,9 @@ async function syncSales(){ doSync('all'); }
 
 // 決済ごとに自動送信（新規）
 async function autoSyncSale(sale){
-  const url=DEFAULT_GAS_URL; // test版: 常にDEFAULT_GAS_URLを使用
+  const url=DEFAULT_GAS_URL;
   if(!url) return;
-  try{
-    const res=await gasGet(url,{type:'add_rows',rows:saleToRows(sale)});
-    if(res&&res.status&&res.status!=='ok') showToast('⚠ GAS: '+res.status+' '+(res.msg||''),'#c00',6000);
-  }catch(e){showToast('⚠ GAS同期エラー: '+e.message,'#c00',6000);}
+  try{ await gasGet(url,{type:'add_rows',rows:saleToRows(sale)}); }catch(e){}
 }
 
 // ポップアップで変更した売上を再送（replace）
