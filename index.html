@@ -2319,10 +2319,11 @@ function saleToRows(sale){
   var ageStr=ages.join('・');
   var natStr=nats.join('・');
   var dt=new Date(sale.datetime);
+  var DOW=['日','月','火','水','木','金','土'];
   var dtStr='';
   if(!isNaN(dt)){
     var mo=dt.getMonth()+1,dy=dt.getDate(),h=dt.getHours(),mi=dt.getMinutes();
-    dtStr=mo+'/'+(dy<10?'0':'')+dy+' '+(h<10?'0':'')+h+':'+(mi<10?'0':'')+mi;
+    dtStr=mo+'/'+(dy<10?'0':'')+dy+' ('+(DOW[dt.getDay()]||'')+') '+(h<10?'0':'')+h+':'+(mi<10?'0':'')+mi;
   }
   var catNameMap={};
   cats.forEach(function(c){catNameMap[c.id]=c.name;});
