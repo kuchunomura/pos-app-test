@@ -148,10 +148,7 @@ function addRows(rows) {
 
   applyGroupBorders(sheet, startRow, rows.length, colCount);
   SpreadsheetApp.flush();
-  sheet.autoResizeColumns(1, sheet.getMaxColumns());
-  sheet.setColumnWidth(17, 20);  // Q: スペーサー
-  sheet.setColumnWidth(22, 20);  // V: スペーサー
-  sheet.setColumnWidth(26, 20);  // Z: スペーサー
+  setDataColumnWidths(sheet);
   updateSummary(sheet);
 }
 
@@ -208,6 +205,26 @@ function clearSheets() {
 }
 
 // ==================== 書式 ====================
+
+function setDataColumnWidths(sheet) {
+  sheet.setColumnWidth(1,  240);  // A: 日時 + Row2ラベル
+  sheet.setColumnWidth(2,   85);  // B: 売上合計
+  sheet.setColumnWidth(3,  150);  // C: 商品名
+  sheet.setColumnWidth(4,  100);  // D: カテゴリ
+  sheet.setColumnWidth(5,   65);  // E: 数量
+  sheet.setColumnWidth(6,   70);  // F: 単価
+  sheet.setColumnWidth(7,   85);  // G: 小計
+  sheet.setColumnWidth(8,   55);  // H: 人数
+  sheet.setColumnWidth(9,  100);  // I: 割引
+  sheet.setColumnWidth(10, 130);  // J: 支払方法
+  sheet.setColumnWidth(11, 125);  // K: 年齢層
+  sheet.setColumnWidth(12,  85);  // L: 国籍
+  sheet.setColumnWidth(13,  60);  // M: 天気
+  sheet.setColumnWidth(14, 120);  // N: メモ
+  sheet.setColumnWidth(15, 155);  // O: 売上ID
+  sheet.setColumnWidth(16,  80);  // P: 端末名
+  sheet.setColumnWidth(17,  20);  // Q: スペーサー
+}
 
 function applyGroupBorders(sheet, startRow, rowCount, colCount) {
   var range = sheet.getRange(startRow, 1, rowCount, colCount);
@@ -334,8 +351,9 @@ function updateSummary(sheet) {
   }
 
   SpreadsheetApp.flush();
-  sheet.autoResizeColumns(SUMMARY_COL, 12);
-  sheet.setColumnWidth(17, 20);  // Q: スペーサー
+  sheet.autoResizeColumns(SUMMARY_COL, 4);   // R-U: 商品別
+  sheet.autoResizeColumns(AGE_COL, 3);        // W-Y: 年齢層別
+  sheet.autoResizeColumns(NAT_COL, 3);        // AA-AC: 国籍別
   sheet.setColumnWidth(22, 20);  // V: スペーサー
   sheet.setColumnWidth(26, 20);  // Z: スペーサー
 }
