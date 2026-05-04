@@ -709,8 +709,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 221;
-const APP_BUILD_DATE = '2026/05/04 14:30';
+const APP_VERSION = 222;
+const APP_BUILD_DATE = '2026/05/04 15:00';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbwO3nrFBG7gDCwbRALgqReIO4Axyfm5mjfgIk9VLyh5o80_qSx8y70SqtYkuCtCpe8BXA/exec';
@@ -2312,7 +2312,7 @@ function saleToRows(sale){
   var FACILITY_CATS=['cat_walk','cat_tree_day','cat_bbq','cat_stay_tree','cat_stay_dome','cat_stay_tent','cat_stay_hm'];
   var discountItems2=ld(KEYS.discounts)||discountItems;
   var discLabel=sale.discount?(discountItems2.find(function(d){return d.key===sale.discount;})||{}).label||sale.discount:'';
-  var method={cash:'現金（封筒へ）',card:'クレジットカード',other:'電子決済'}[sale.method]||sale.method||'';
+  var method={cash:'現金',card:'クレジットカード',other:'電子決済'}[sale.method]||sale.method||'';
   var attrs=sale.attrs||{};
   var ages=Array.isArray(attrs.age)?attrs.age:(attrs.age?[attrs.age]:[]);
   var nats=Array.isArray(attrs.nationality)?attrs.nationality:(attrs.nationality?[attrs.nationality]:[]);

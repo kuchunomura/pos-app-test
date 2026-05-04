@@ -88,42 +88,47 @@ function ensureHeaders(sheet) {
 function setTotalsFormulas(sheet) {
   sheet.getRange(1, 1, 1, 17).clearContent().clearFormat();
 
+  // 総件数・総売上・総人数: 背景なし
   sheet.getRange(1, 1).setValue('総件数');
   sheet.getRange(1, 2).setFormula('=COUNTA(B4:B)');
-
   sheet.getRange(1, 3).setValue('総売上');
   sheet.getRange(1, 4).setFormula('=SUM(B4:B)');
   sheet.getRange(1, 4).setNumberFormat('#,##0');
-
   sheet.getRange(1, 5).setValue('総人数');
   sheet.getRange(1, 6).setFormula('=SUM(H4:H)');
+  sheet.getRange(1, 1, 1, 6).setFontWeight('bold').setHorizontalAlignment('center');
 
+  // クレジット: クレジット色
   sheet.getRange(1, 7).setValue('クレジット');
   sheet.getRange(1, 8).setFormula('=SUMIF(J4:J,"クレジットカード",B4:B)');
   sheet.getRange(1, 8).setNumberFormat('#,##0');
+  sheet.getRange(1, 7, 1, 2).setFontWeight('bold').setBackground('#f0f8ff').setHorizontalAlignment('center');
 
+  // 電子決済: 電子決済色
   sheet.getRange(1, 9).setValue('電子決済');
   sheet.getRange(1, 10).setFormula('=SUMIF(J4:J,"電子決済",B4:B)');
   sheet.getRange(1, 10).setNumberFormat('#,##0');
+  sheet.getRange(1, 9, 1, 2).setFontWeight('bold').setBackground('#fdf5ff').setHorizontalAlignment('center');
 
-  sheet.getRange(1, 11).setValue('現金（封筒へ）');
-  sheet.getRange(1, 12).setFormula('=SUMIF(J4:J,"現金（封筒へ）",B4:B)');
+  // 現金: 背景なし（白）
+  sheet.getRange(1, 11).setValue('現金');
+  sheet.getRange(1, 12).setFormula('=SUMIF(J4:J,"現金",B4:B)');
   sheet.getRange(1, 12).setNumberFormat('#,##0');
-
-  sheet.getRange(1, 1, 1, 12).setFontWeight('bold').setBackground('#e8f5e9');
+  sheet.getRange(1, 11, 1, 2).setFontWeight('bold').setHorizontalAlignment('center');
 }
 
 // Row2: レジ現金入力行
 function setupCashInputRow(sheet) {
+  sheet.getRange(2, 1, 1, 5).setHorizontalAlignment('center');
   sheet.getRange(2, 1).setValue('全レジ現金-売上現金（手入力）').setFontWeight('bold');
-  sheet.getRange(2, 2).setBackground('#fff9c4'); // 黄色入力セル（値は触らない）
+  sheet.getRange(2, 2).setBackground('#fff9c4').setFontWeight('bold');
   // C2: 全レジ現金 − 現金売上 = 差額
-  sheet.getRange(2, 3).setFormula('=IF(B2="","",B2-SUMIF(J4:J,"現金（封筒へ）",B4:B))');
+  sheet.getRange(2, 3).setFormula('=IF(B2="","",B2-SUMIF(J4:J,"現金",B4:B))');
   sheet.getRange(2, 3).setNumberFormat('+#,##0;-#,##0;');
-  // D2: ラベル, E2: 対10万差額
+  // D2: ラベル, E2: 対10万差額（ゼロ=0、常に赤太字）
   sheet.getRange(2, 4).setValue('対10万差額').setFontWeight('bold');
   sheet.getRange(2, 5).setFormula('=IF(B2="","",B2-100000)');
-  sheet.getRange(2, 5).setNumberFormat('+#,##0;-#,##0;');
+  sheet.getRange(2, 5).setNumberFormat('+#,##0;-#,##0;0').setFontColor('#B22222').setFontWeight('bold');
 }
 
 // ==================== 行操作 ====================
@@ -200,6 +205,7 @@ function clearSheets() {
     var hRange = sheet.getRange(3, 1, 1, HEADERS.length);
     hRange.setValues([HEADERS]).setFontWeight('bold').setBackground('#f5f5f5').setHorizontalAlignment('center');
     sheet.setFrozenRows(3);
+    setDataColumnWidths(sheet);
     updateSummary(sheet);
   }
 }
@@ -226,6 +232,21 @@ function setDataColumnWidths(sheet) {
   sheet.setColumnWidth(17,  20);  // Q: スペーサー
 }
 
+function setSummaryColumnWidths(sheet) {
+  sheet.setColumnWidth(18, 150);  // R: 商品名
+  sheet.setColumnWidth(19, 100);  // S: カテゴリ
+  sheet.setColumnWidth(20,  60);  // T: 数量
+  sheet.setColumnWidth(21,  90);  // U: 金額合計
+  sheet.setColumnWidth(22,  20);  // V: スペーサー
+  sheet.setColumnWidth(23,  80);  // W: 年齢層
+  sheet.setColumnWidth(24,  90);  // X: 件数（組）
+  sheet.setColumnWidth(25,  60);  // Y: 人数
+  sheet.setColumnWidth(26,  20);  // Z: スペーサー
+  sheet.setColumnWidth(27,  80);  // AA: 国籍
+  sheet.setColumnWidth(28,  90);  // AB: 件数（組）
+  sheet.setColumnWidth(29,  60);  // AC: 人数
+}
+
 function applyGroupBorders(sheet, startRow, rowCount, colCount) {
   var range = sheet.getRange(startRow, 1, rowCount, colCount);
   range.setBorder(true, true, true, true, false, null, '#999999', SpreadsheetApp.BorderStyle.SOLID);
@@ -249,10 +270,7 @@ function updateSummary(sheet) {
 
   if (lastDataRow < 4) {
     SpreadsheetApp.flush();
-    sheet.autoResizeColumns(SUMMARY_COL, 12);
-    sheet.setColumnWidth(17, 20);
-    sheet.setColumnWidth(22, 20);
-    sheet.setColumnWidth(26, 20);
+    setSummaryColumnWidths(sheet);
     return;
   }
 
@@ -315,12 +333,14 @@ function updateSummary(sheet) {
   var row = 1;
   sheet.getRange(row, SUMMARY_COL, 1, 4)
     .setValues([['商品名','カテゴリ','数量','金額合計']])
-    .setBackground(hBg).setFontWeight('bold');
+    .setBackground(hBg).setFontWeight('bold').setHorizontalAlignment('center');
   row++;
   var iKeys = Object.keys(itemMap);
   for (var k = 0; k < iKeys.length; k++) {
     var v = itemMap[iKeys[k]];
-    sheet.getRange(row, SUMMARY_COL, 1, 4).setValues([[v.name, v.cat, v.qty, v.total]]);
+    sheet.getRange(row, SUMMARY_COL, 1, 4)
+      .setValues([[v.name, v.cat, v.qty, v.total]])
+      .setHorizontalAlignment('center');
     row++;
   }
 
@@ -328,12 +348,14 @@ function updateSummary(sheet) {
   var aRow = 1;
   sheet.getRange(aRow, AGE_COL, 1, 3)
     .setValues([['年齢層','件数（組）','人数']])
-    .setBackground(hBg).setFontWeight('bold');
+    .setBackground(hBg).setFontWeight('bold').setHorizontalAlignment('center');
   aRow++;
   var aKeys = Object.keys(ageMap);
   for (var k = 0; k < aKeys.length; k++) {
     var v = ageMap[aKeys[k]];
-    sheet.getRange(aRow, AGE_COL, 1, 3).setValues([[aKeys[k], v.groups, v.people]]);
+    sheet.getRange(aRow, AGE_COL, 1, 3)
+      .setValues([[aKeys[k], v.groups, v.people]])
+      .setHorizontalAlignment('center');
     aRow++;
   }
 
@@ -341,19 +363,17 @@ function updateSummary(sheet) {
   var nRow = 1;
   sheet.getRange(nRow, NAT_COL, 1, 3)
     .setValues([['国籍','件数（組）','人数']])
-    .setBackground(hBg).setFontWeight('bold');
+    .setBackground(hBg).setFontWeight('bold').setHorizontalAlignment('center');
   nRow++;
   var nKeys = Object.keys(natMap);
   for (var k = 0; k < nKeys.length; k++) {
     var v = natMap[nKeys[k]];
-    sheet.getRange(nRow, NAT_COL, 1, 3).setValues([[nKeys[k], v.groups, v.people]]);
+    sheet.getRange(nRow, NAT_COL, 1, 3)
+      .setValues([[nKeys[k], v.groups, v.people]])
+      .setHorizontalAlignment('center');
     nRow++;
   }
 
   SpreadsheetApp.flush();
-  sheet.autoResizeColumns(SUMMARY_COL, 4);   // R-U: 商品別
-  sheet.autoResizeColumns(AGE_COL, 3);        // W-Y: 年齢層別
-  sheet.autoResizeColumns(NAT_COL, 3);        // AA-AC: 国籍別
-  sheet.setColumnWidth(22, 20);  // V: スペーサー
-  sheet.setColumnWidth(26, 20);  // Z: スペーサー
+  setSummaryColumnWidths(sheet);
 }
