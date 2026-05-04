@@ -709,8 +709,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 217;
-const APP_BUILD_DATE = '2026/05/04 11:50';
+const APP_VERSION = 218;
+const APP_BUILD_DATE = '2026/05/04 13:36';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbwO3nrFBG7gDCwbRALgqReIO4Axyfm5mjfgIk9VLyh5o80_qSx8y70SqtYkuCtCpe8BXA/exec';
@@ -2294,7 +2294,7 @@ function exportCSV(){
   const ts=now.getFullYear()+('0'+(now.getMonth()+1)).slice(-2)+('0'+now.getDate()).slice(-2)+'_'+('0'+now.getHours()).slice(-2)+('0'+now.getMinutes()).slice(-2);
   const q=function(v){return '"'+String(v===null||v===undefined?'':v).replace(/"/g,'""')+'"';};
   // GASシートと同じ列構成（1行1商品）でエクスポート
-  const header=['日時','曜日','売上合計','商品名','カテゴリ','数量','単価','小計','人数','割引','支払方法','年齢層','国籍','天気','売上ID'];
+  const header=['日時','売上合計','商品名','カテゴリ','数量','単価','小計','人数','割引','支払方法','年齢層','国籍','天気','メモ','売上ID','端末名'];
   var allRows=[header];
   sales.forEach(function(sale){
     saleToRows(sale).forEach(function(row){allRows.push(row);});
@@ -2307,7 +2307,7 @@ function exportCSV(){
 }
 
 // 売上1件を複数行に変換（1行1商品 — CSV・GAS共通フォーマット）
-// 列: 日時, 曜日, 売上合計, 商品名, カテゴリ, 数量, 単価, 小計, 人数, 割引, 支払方法, 年齢層, 国籍, 天気, 売上ID
+// 列: 日時, 売上合計, 商品名, カテゴリ, 数量, 単価, 小計, 人数, 割引, 支払方法, 年齢層, 国籍, 天気, メモ, 売上ID, 端末名
 function saleToRows(sale){
   var FACILITY_CATS=['cat_walk','cat_tree_day','cat_bbq','cat_stay_tree','cat_stay_dome','cat_stay_tent','cat_stay_hm'];
   var discountItems2=ld(KEYS.discounts)||discountItems;
@@ -2335,23 +2335,22 @@ function saleToRows(sale){
     var m=i.name.match(/[（(](\d+)人[）)]/);
     var persons=isF?(m?parseInt(m[1])*i.qty:i.qty):0;
     return [
-      dtStr,                   // A: 日時（全行。ソート用）
-      '',                      // B: (未使用)
-      isFirst?sale.total:'',   // C: 売上合計
-      i.name,                  // D: 商品名
-      catName,                 // E: カテゴリ
-      i.qty,                   // F: 数量
-      i.price,                 // G: 単価
-      i.price*i.qty,           // H: 小計
-      persons,                 // I: 人数
-      isFirst?discLabel:'',    // J: 割引
-      isFirst?method:'',       // K: 支払方法
-      isFirst?ageStr:'',       // L: 年齢層
-      isFirst?natStr:'',       // M: 国籍
-      isFirst?weatherStr:'',         // N: 天気
-      isFirst?sale.memo||'':'',     // O: メモ
-      sale.id,                      // P: 売上ID（全行。重複排除用）
-      isFirst?sale.device_name||sale.device||'':'',   // Q: 端末名
+      dtStr,                                          // A: 日時（全行。ソート用）
+      isFirst?sale.total:'',                          // B: 売上合計
+      i.name,                                         // C: 商品名
+      catName,                                        // D: カテゴリ
+      i.qty,                                          // E: 数量
+      i.price,                                        // F: 単価
+      i.price*i.qty,                                  // G: 小計
+      persons,                                        // H: 人数
+      isFirst?discLabel:'',                           // I: 割引
+      isFirst?method:'',                              // J: 支払方法
+      isFirst?ageStr:'',                              // K: 年齢層
+      isFirst?natStr:'',                              // L: 国籍
+      isFirst?weatherStr:'',                          // M: 天気
+      isFirst?sale.memo||'':'',                       // N: メモ
+      sale.id,                                        // O: 売上ID（全行。重複排除用）
+      isFirst?sale.device_name||sale.device||'':'',   // P: 端末名
     ];
   });
 }
