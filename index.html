@@ -712,7 +712,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 230;
+const APP_VERSION = 231;
 const APP_BUILD_DATE = '2026/05/11';
 
 // ===== ストレージ =====
@@ -1256,13 +1256,18 @@ function makeItemBtn(item, cat, grid){
   } else {
     priceHtml='<div class="item-price" style="color:'+cat.price+'">¥'+dispPrice.toLocaleString()+'</div>';
   }
+  var dotHtml='';
+  if(STAY_CAT_IDS.includes(item.cat)){
+    var dotColor=item.nameColor||cat.text;
+    dotHtml='<span style="color:'+dotColor+';">●</span>';
+  }
   var nameHtml;
   if(item.nameParts && item.nameParts.length > 1){
     var sizeStyle=(item.fontSize||cat.fontSize)?'font-size:'+(item.fontSize||cat.fontSize)+';':'';
     var defColor=item.nameColor||cat.text;
-    nameHtml='<div class="item-name" style="'+sizeStyle+'">'+item.nameParts.map(function(p){return '<span style="color:'+(p.color||defColor)+'">'+p.text+'</span>';}).join('')+'</div>';
+    nameHtml='<div class="item-name" style="'+sizeStyle+'">'+dotHtml+item.nameParts.map(function(p){return '<span style="color:'+(p.color||defColor)+'">'+p.text+'</span>';}).join('')+'</div>';
   } else {
-    nameHtml='<div class="item-name" style="color:'+(item.nameColor||cat.text)+';'+(item.fontSize||cat.fontSize?'font-size:'+(item.fontSize||cat.fontSize)+';':'')+'">'+item.name+'</div>';
+    nameHtml='<div class="item-name" style="color:'+(item.nameColor||cat.text)+';'+(item.fontSize||cat.fontSize?'font-size:'+(item.fontSize||cat.fontSize)+';':'')+'">'+dotHtml+item.name+'</div>';
   }
   btn.innerHTML=
     '<div class="item-drag-handle">⠿</div>'+
