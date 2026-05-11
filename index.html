@@ -712,7 +712,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 229;
+const APP_VERSION = 230;
 const APP_BUILD_DATE = '2026/05/11';
 
 // ===== ストレージ =====
@@ -1018,8 +1018,8 @@ function getCatTimeInfo(catId){
         var m55 = c.name.match(/(\d+)分/);
         if(!m55) return null;
         var labelMins = parseInt(m55[1]);
-        // 55分チケット=実60分、115分チケット=実120分
-        var actualMins = labelMins===55 ? 60 : labelMins===115 ? 120 : labelMins;
+        // 空中ウォークのみ: 55分=実60分、115分=実120分。ツリーハウスはきっちり
+        var actualMins = catId==='cat_walk' ? (labelMins===55 ? 60 : labelMins===115 ? 120 : labelMins) : labelMins;
         var end = new Date(now.getTime() + actualMins*60000);
         var hh = end.getHours();
         var mm = ('0'+end.getMinutes()).slice(-2);
