@@ -712,7 +712,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 231;
+const APP_VERSION = 232;
 const APP_BUILD_DATE = '2026/05/11';
 
 // ===== ストレージ =====
@@ -792,18 +792,18 @@ const DEFAULT_ITEMS = [
   {id:'i_tree1day',name:'ツリーハウス昼 1DAY',     price:4000, cat:'cat_tree_day', stock:0, free_mura:false},
   {id:'i_bbq',     name:'BBQスペース',             price:3000, cat:'cat_bbq', stock:0, free_mura:true},
   // 宿泊：ツリーハウス
-  {id:'i_st_th',  name:'ツリーハウス',       price:12000,cat:'cat_stay_tree',stock:1, stay_prices:{1:14000,2:12000,3:10000,4:8000,5:8000}},
+  {id:'i_st_th',  name:'ツリーハウス',       price:12000,cat:'cat_stay_tree',stock:1, stay_prices:{1:14000,2:12000,3:10000,4:8000,5:8000}, dotColor:'#5A9050'},
   // 宿泊：ドーム
-  {id:'i_st_dm',  name:'ドーム（ミラー）',   price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, nameColor:'#A0A0A0', nameParts:[{text:'ドーム',color:'#1a1a1a'},{text:'（ミラー）',color:'#A0A0A0'}]},
-  {id:'i_st_dt',  name:'ドーム（クリア）',     price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, nameColor:'#5BACD4', nameParts:[{text:'ドーム',color:'#1a1a1a'},{text:'（クリア）',color:'#5BACD4'}]},
-  {id:'i_st_dg',  name:'ドーム（グレー）',   price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, nameColor:'#707070', nameParts:[{text:'ドーム',color:'#1a1a1a'},{text:'（グレー）',color:'#707070'}]},
+  {id:'i_st_dm',  name:'ドーム（ミラー）',   price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, dotColor:'#B0B0B0', nameParts:[{text:'ドーム',color:'#1a1a1a'},{text:'（ミラー）',color:'#1a1a1a'}]},
+  {id:'i_st_dt',  name:'ドーム（クリア）',     price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, dotColor:'#5BACD4', nameParts:[{text:'ドーム',color:'#1a1a1a'},{text:'（クリア）',color:'#1a1a1a'}]},
+  {id:'i_st_dg',  name:'ドーム（グレー）',   price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, dotColor:'#888888', nameParts:[{text:'ドーム',color:'#1a1a1a'},{text:'（グレー）',color:'#1a1a1a'}]},
   // 宿泊：空中テント
-  {id:'i_st_t1',  name:'テント①オレンジ',   price:7000, cat:'cat_stay_tent',stock:1, stay_prices:{1:9000,2:7000,3:7000}, nameColor:'#C86820', nameParts:[{text:'テント①',color:'#1a1a1a'},{text:'オレンジ',color:'#C86820'}]},
-  {id:'i_st_t2',  name:'テント②ホワイト',   price:7000, cat:'cat_stay_tent',stock:1, stay_prices:{1:9000,2:7000,3:7000}, nameColor:'#909090', nameParts:[{text:'テント②',color:'#1a1a1a'},{text:'ホワイト',color:'#909090'}]},
-  {id:'i_st_t3',  name:'テント③ベージュ',   price:7000, cat:'cat_stay_tent',stock:1, stay_prices:{1:9000,2:7000,3:7000}, nameColor:'#7A5C30', nameParts:[{text:'テント③',color:'#1a1a1a'},{text:'ベージュ',color:'#7A5C30'}]},
+  {id:'i_st_t1',  name:'テント①オレンジ',   price:7000, cat:'cat_stay_tent',stock:1, stay_prices:{1:9000,2:7000,3:7000}, dotColor:'#E07820', nameParts:[{text:'テント①',color:'#1a1a1a'},{text:'オレンジ',color:'#1a1a1a'}]},
+  {id:'i_st_t2',  name:'テント②ホワイト',   price:7000, cat:'cat_stay_tent',stock:1, stay_prices:{1:9000,2:7000,3:7000}, dotColor:'#C0C8D0', nameParts:[{text:'テント②',color:'#1a1a1a'},{text:'ホワイト',color:'#1a1a1a'}]},
+  {id:'i_st_t3',  name:'テント③ベージュ',   price:7000, cat:'cat_stay_tent',stock:1, stay_prices:{1:9000,2:7000,3:7000}, dotColor:'#C8A870', nameParts:[{text:'テント③',color:'#1a1a1a'},{text:'ベージュ',color:'#1a1a1a'}]},
   // 宿泊：ハンモック（⑥ 2+3名構成に変更）
-  {id:'i_st_h1',name:'ハンモック①',price:6000,cat:'cat_stay_hm',stock:1,stay_prices:{1:6000,2:5000,3:4000,4:4000,5:4000}},
-  {id:'i_st_h2',name:'ハンモック②',price:6000,cat:'cat_stay_hm',stock:1,stay_prices:{1:6000,2:5000,3:4000,4:4000,5:4000}},
+  {id:'i_st_h1',name:'ハンモック①',price:6000,cat:'cat_stay_hm',stock:1,stay_prices:{1:6000,2:5000,3:4000,4:4000,5:4000}, dotColor:'#B09060'},
+  {id:'i_st_h2',name:'ハンモック②',price:6000,cat:'cat_stay_hm',stock:1,stay_prices:{1:6000,2:5000,3:4000,4:4000,5:4000}, dotColor:'#B09060'},
   // 備品レンタル
   {id:'i_pet_01', name:'ペット', price:3000, cat:'cat_pet', stock:99, free_mura:false},
   {id:'i_b01', name:'焚火台セット',        price:1500,cat:'cat_rental',stock:7, free_mura:false},
@@ -1258,7 +1258,7 @@ function makeItemBtn(item, cat, grid){
   }
   var dotHtml='';
   if(STAY_CAT_IDS.includes(item.cat)){
-    var dotColor=item.nameColor||cat.text;
+    var dotColor=item.dotColor||item.nameColor||cat.text;
     dotHtml='<span style="color:'+dotColor+';">●</span>';
   }
   var nameHtml;
