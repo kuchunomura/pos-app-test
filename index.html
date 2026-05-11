@@ -712,7 +712,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 232;
+const APP_VERSION = 233;
 const APP_BUILD_DATE = '2026/05/11';
 
 // ===== ストレージ =====
@@ -1027,7 +1027,7 @@ function getCatTimeInfo(catId){
       }).filter(function(x){return x;});
       if(parts.length > 0){
         var endStr = parts.join(' / ');
-        base += (base?' ':'') + '<span style="color:#8B3A3A;font-weight:700;font-size:13px;">'+endStr+'</span>';
+        base += '<span style="color:#8B3A3A;font-weight:700;font-size:13px;margin-left:2em;">'+endStr+'</span>';
       }
     }
   }
