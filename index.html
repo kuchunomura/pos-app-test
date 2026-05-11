@@ -644,6 +644,12 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
         <option value="15px">特大（15px）</option>
       </select>
     </div>
+    <div class="form-row">
+      <label>名前カラー（部分設定）</label>
+      <div id="nameparts-editor" style="display:flex;flex-direction:column;gap:5px;margin-top:4px;"></div>
+      <button type="button" onclick="addNamePart()" style="margin-top:6px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:#fff;font-size:11px;cursor:pointer;font-family:inherit;">＋ 部分追加</button>
+      <div style="font-size:9px;color:#999;margin-top:3px;">複数パーツで色分け表示。テキストの合計が商品名になります。</div>
+    </div>
     <div class="modal-btns">
       <button onclick="closeItemModal()">キャンセル</button>
       <button class="confirm" id="item-modal-save-btn" onclick="saveModalItem()">追加</button>
@@ -706,7 +712,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 225;
+const APP_VERSION = 226;
 const APP_BUILD_DATE = '2026/05/11';
 
 // ===== ストレージ =====
@@ -788,13 +794,13 @@ const DEFAULT_ITEMS = [
   // 宿泊：ツリーハウス
   {id:'i_st_th',  name:'ツリーハウス',       price:12000,cat:'cat_stay_tree',stock:1, stay_prices:{1:14000,2:12000,3:10000,4:8000,5:8000}},
   // 宿泊：ドーム
-  {id:'i_st_dm',  name:'ドーム（ミラー）',   price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, nameColor:'#A0A0A0'},
-  {id:'i_st_dt',  name:'ドーム（クリア）',     price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, nameColor:'#5BACD4'},
-  {id:'i_st_dg',  name:'ドーム（グレー）',   price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, nameColor:'#707070'},
+  {id:'i_st_dm',  name:'ドーム（ミラー）',   price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, nameColor:'#A0A0A0', nameParts:[{text:'ドーム',color:'#1a1a1a'},{text:'（ミラー）',color:'#A0A0A0'}]},
+  {id:'i_st_dt',  name:'ドーム（クリア）',     price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, nameColor:'#5BACD4', nameParts:[{text:'ドーム',color:'#1a1a1a'},{text:'（クリア）',color:'#5BACD4'}]},
+  {id:'i_st_dg',  name:'ドーム（グレー）',   price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, nameColor:'#707070', nameParts:[{text:'ドーム',color:'#1a1a1a'},{text:'（グレー）',color:'#707070'}]},
   // 宿泊：空中テント
-  {id:'i_st_t1',  name:'テント①オレンジ',   price:7000, cat:'cat_stay_tent',stock:1, stay_prices:{1:9000,2:7000,3:7000}, nameColor:'#C86820'},
-  {id:'i_st_t2',  name:'テント②ホワイト',   price:7000, cat:'cat_stay_tent',stock:1, stay_prices:{1:9000,2:7000,3:7000}, nameColor:'#909090'},
-  {id:'i_st_t3',  name:'テント③ベージュ',   price:7000, cat:'cat_stay_tent',stock:1, stay_prices:{1:9000,2:7000,3:7000}, nameColor:'#7A5C30'},
+  {id:'i_st_t1',  name:'テント①オレンジ',   price:7000, cat:'cat_stay_tent',stock:1, stay_prices:{1:9000,2:7000,3:7000}, nameColor:'#C86820', nameParts:[{text:'テント①',color:'#1a1a1a'},{text:'オレンジ',color:'#C86820'}]},
+  {id:'i_st_t2',  name:'テント②ホワイト',   price:7000, cat:'cat_stay_tent',stock:1, stay_prices:{1:9000,2:7000,3:7000}, nameColor:'#909090', nameParts:[{text:'テント②',color:'#1a1a1a'},{text:'ホワイト',color:'#909090'}]},
+  {id:'i_st_t3',  name:'テント③ベージュ',   price:7000, cat:'cat_stay_tent',stock:1, stay_prices:{1:9000,2:7000,3:7000}, nameColor:'#7A5C30', nameParts:[{text:'テント③',color:'#1a1a1a'},{text:'ベージュ',color:'#7A5C30'}]},
   // 宿泊：ハンモック（⑥ 2+3名構成に変更）
   {id:'i_st_h1',name:'ハンモック①',price:6000,cat:'cat_stay_hm',stock:1,stay_prices:{1:6000,2:5000,3:4000,4:4000,5:4000}},
   {id:'i_st_h2',name:'ハンモック②',price:6000,cat:'cat_stay_hm',stock:1,stay_prices:{1:6000,2:5000,3:4000,4:4000,5:4000}},
@@ -1246,9 +1252,17 @@ function makeItemBtn(item, cat, grid){
   } else {
     priceHtml='<div class="item-price" style="color:'+cat.price+'">¥'+dispPrice.toLocaleString()+'</div>';
   }
+  var nameHtml;
+  if(item.nameParts && item.nameParts.length > 1){
+    var sizeStyle=(item.fontSize||cat.fontSize)?'font-size:'+(item.fontSize||cat.fontSize)+';':'';
+    var defColor=item.nameColor||cat.text;
+    nameHtml='<div class="item-name" style="'+sizeStyle+'">'+item.nameParts.map(function(p){return '<span style="color:'+(p.color||defColor)+'">'+p.text+'</span>';}).join('')+'</div>';
+  } else {
+    nameHtml='<div class="item-name" style="color:'+(item.nameColor||cat.text)+';'+(item.fontSize||cat.fontSize?'font-size:'+(item.fontSize||cat.fontSize)+';':'')+'">'+item.name+'</div>';
+  }
   btn.innerHTML=
     '<div class="item-drag-handle">⠿</div>'+
-    '<div class="item-name" style="color:'+(item.nameColor||cat.text)+';'+(item.fontSize||cat.fontSize?'font-size:'+(item.fontSize||cat.fontSize)+';':'')+'">'+item.name+'</div>'+
+    nameHtml+
     priceHtml+
     (item.stock>0?'<div class="item-stock">在庫:'+item.stock+'</div>':'');
   if(!editMode){
@@ -1287,13 +1301,21 @@ function isStayItem(item){
 }
 
 function getDiscountedPrice(item){
-  // 年間パス昼：空中ウォーク・ツリーハウス昼・レンタルが無料
+  // 年間パス昼：レンタル全部無料、空中ウォーク/ツリーハウス昼は未使用なら無料
   if(activeDiscount==='pass_day'){
-    if(item.cat==='cat_walk' || item.cat==='cat_tree_day' || item.cat==='cat_rental') return 0;
+    if(item.cat==='cat_rental') return 0;
+    if(item.cat==='cat_walk' || item.cat==='cat_tree_day'){
+      var passUsed=cart.some(function(c){var m=items.find(function(i){return i.id===c.id;});var cc=m?m.cat:c.cat;return(cc==='cat_walk'||cc==='cat_tree_day')&&c.discounted&&c.paidLabel;});
+      return passUsed ? item.price : 0;
+    }
   }
-  // 年間パス夜：宿泊・レンタルが無料
+  // 年間パス夜：レンタル全部無料、宿泊は未使用なら無料
   if(activeDiscount==='pass_night'){
-    if(isStayItem(item) || item.cat==='cat_rental') return 0;
+    if(item.cat==='cat_rental') return 0;
+    if(isStayItem(item)){
+      var passUsedN=cart.some(function(c){var m=items.find(function(i){return i.id===c.id;});var cc=m?m.cat:c.cat;return STAY_CAT_IDS.includes(cc)&&c.discounted&&c.paidLabel;});
+      return passUsedN ? item.price : 0;
+    }
   }
   if(activeDiscount==='sou'){
     if(SOU_FREE_IDS.includes(item.id)) return 0;
@@ -1422,17 +1444,28 @@ function recalcCartPrices(){
     const item=items.find(i=>i.id===c.id);
     return item && STAY_CAT_IDS.includes(item.cat);
   });
+  var passEntryUsed = false; // 年間パス: 入場1件目のみ無料
   cart.forEach(cartItem => {
     const masterItem = items.find(i=>i.id===cartItem.id);
     const cat = masterItem ? masterItem.cat : cartItem.cat;
     var applied = false;
-    // 年間パス昼：空中ウォーク・ツリーハウス昼・レンタルが無料
-    if(activeDiscount==='pass_day' && (cat==='cat_walk' || cat==='cat_tree_day' || cat==='cat_rental')){
-      cartItem.price=0; cartItem.discounted=true; cartItem.paidLabel=paidDisplaySettings.label; applied=true;
+    // 年間パス昼：レンタル全部無料、空中ウォーク/ツリーハウス昼は1件目のみ無料
+    if(activeDiscount==='pass_day'){
+      if(cat==='cat_rental'){
+        cartItem.price=0; cartItem.discounted=true; cartItem.paidLabel=paidDisplaySettings.label; applied=true;
+      } else if((cat==='cat_walk' || cat==='cat_tree_day') && !passEntryUsed){
+        cartItem.price=0; cartItem.discounted=true; cartItem.paidLabel=paidDisplaySettings.label; applied=true;
+        passEntryUsed=true;
+      }
     }
-    // 年間パス夜：宿泊・レンタルが無料
-    else if(activeDiscount==='pass_night' && (STAY_CAT_IDS.includes(cat) || cat==='cat_rental')){
-      cartItem.price=0; cartItem.discounted=true; cartItem.paidLabel=paidDisplaySettings.label; applied=true;
+    // 年間パス夜：レンタル全部無料、宿泊は1件目のみ無料
+    else if(activeDiscount==='pass_night'){
+      if(cat==='cat_rental'){
+        cartItem.price=0; cartItem.discounted=true; cartItem.paidLabel=paidDisplaySettings.label; applied=true;
+      } else if(STAY_CAT_IDS.includes(cat) && !passEntryUsed){
+        cartItem.price=0; cartItem.discounted=true; cartItem.paidLabel=paidDisplaySettings.label; applied=true;
+        passEntryUsed=true;
+      }
     }
     else if(activeDiscount==='sou' && SOU_FREE_IDS.includes(cartItem.id)){
       cartItem.price=0; cartItem.discounted=true; cartItem.paidLabel=paidDisplaySettings.label; applied=true;
@@ -2377,7 +2410,7 @@ function saleToRows(sale){
     var m=i.name.match(/[（(](\d+)人[）)]/);
     var persons=isF?(m?parseInt(m[1])*i.qty:i.qty):0;
     return [
-      dtStr,                                          // A: 日時（全行。ソート用）
+      isFirst ? dtStr : '',                           // A: 日時（最初の行のみ）
       isFirst?sale.total:'',                          // B: 売上合計
       i.name,                                         // C: 商品名
       catName,                                        // D: カテゴリ
@@ -2794,6 +2827,46 @@ function deleteItem(idx){
   showToast('✓ 削除しました');
 }
 
+// ===== 商品名部分カラー =====
+var namePartsTemp = [];
+
+function renderNamePartsEditor(){
+  var c=document.getElementById('nameparts-editor');
+  if(!c) return;
+  c.innerHTML='';
+  namePartsTemp.forEach(function(part,i){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;gap:4px;align-items:center;';
+    var txtInput=document.createElement('input');
+    txtInput.type='text';txtInput.value=part.text;txtInput.placeholder='テキスト';
+    txtInput.style.cssText='flex:1;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:inherit;';
+    txtInput.addEventListener('input',(function(idx){return function(){namePartsTemp[idx].text=this.value;updateNameFromParts();};})(i));
+    var colorInput=document.createElement('input');
+    colorInput.type='color';colorInput.value=part.color||'#1a1a1a';
+    colorInput.style.cssText='width:36px;height:28px;border:1px solid var(--border);border-radius:5px;padding:1px;cursor:pointer;flex-shrink:0;';
+    colorInput.addEventListener('change',(function(idx){return function(){namePartsTemp[idx].color=this.value;};})(i));
+    row.appendChild(txtInput);row.appendChild(colorInput);
+    if(namePartsTemp.length>1){
+      var delBtn=document.createElement('button');
+      delBtn.type='button';delBtn.textContent='削除';
+      delBtn.style.cssText='padding:3px 7px;border:1px solid #fcc;border-radius:5px;background:#fff;color:var(--red);font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0;';
+      delBtn.addEventListener('click',(function(idx){return function(){namePartsTemp.splice(idx,1);renderNamePartsEditor();updateNameFromParts();};})(i));
+      row.appendChild(delBtn);
+    }
+    c.appendChild(row);
+  });
+}
+
+function addNamePart(){
+  namePartsTemp.push({text:'',color:'#1a1a1a'});
+  renderNamePartsEditor();
+}
+
+function updateNameFromParts(){
+  var el=document.getElementById('modal-item-name');
+  if(el) el.value=namePartsTemp.map(function(p){return p.text;}).join('');
+}
+
 function openItemModal(catId){
   updateCatSelects();
   const sel=document.getElementById('modal-item-cat');if(catId)sel.value=catId;
@@ -2804,6 +2877,8 @@ function openItemModal(catId){
   document.getElementById('item-modal-title').textContent='商品を登録';
   document.getElementById('item-modal-save-btn').textContent='追加';
   delete document.getElementById('item-modal').dataset.editIdx;
+  namePartsTemp=[{text:'',color:'#1a1a1a'}];
+  renderNamePartsEditor();
   document.getElementById('item-modal').classList.add('open');
 }
 
@@ -2815,6 +2890,8 @@ function editItem(idx){
   document.getElementById('modal-item-cat').value=item.cat;
   document.getElementById('modal-item-stock').value=item.stock||0;
   document.getElementById('modal-item-fontsize').value=item.fontSize||'';
+  namePartsTemp=item.nameParts?JSON.parse(JSON.stringify(item.nameParts)):[{text:item.name||'',color:item.nameColor||'#1a1a1a'}];
+  renderNamePartsEditor();
   document.getElementById('item-modal-title').textContent='商品を編集';
   document.getElementById('item-modal-save-btn').textContent='保存';
   document.getElementById('item-modal').dataset.editIdx=idx;
@@ -2833,12 +2910,18 @@ function saveModalItem(){
   const stock=parseInt(document.getElementById('modal-item-stock').value)||0;
   const fontSize=document.getElementById('modal-item-fontsize').value||'';
   if(!name||!price){showToast('⚠ 商品名と金額を入力してください','#c00');return;}
+  const validParts=namePartsTemp.filter(function(p){return p.text;});
+  const nameParts=validParts.length>1?validParts:null;
   const editIdx=document.getElementById('item-modal').dataset.editIdx;
   if(editIdx!==undefined&&editIdx!==''){
-    items[parseInt(editIdx)]={...items[parseInt(editIdx)],name,price,cat,stock,fontSize};
+    var updated={...items[parseInt(editIdx)],name,price,cat,stock,fontSize};
+    if(nameParts) updated.nameParts=nameParts; else delete updated.nameParts;
+    items[parseInt(editIdx)]=updated;
     showToast('✓ '+name+' を更新しました');
   } else {
-    items.push({id:'i_'+Date.now(),name,price,cat,stock,fontSize});
+    var newItem={id:'i_'+Date.now(),name,price,cat,stock,fontSize};
+    if(nameParts) newItem.nameParts=nameParts;
+    items.push(newItem);
     showToast('✓ '+name+' を追加しました');
   }
   sv(KEYS.items,items);closeItemModal();renderItemList();renderPOS();renderCatFilterTabs();
