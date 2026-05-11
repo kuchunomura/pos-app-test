@@ -129,6 +129,10 @@ function setupCashInputRow(sheet) {
   sheet.getRange(2, 4).setValue('対10万差額').setFontWeight('bold');
   sheet.getRange(2, 5).setFormula('=IF(B2="","",B2-100000)');
   sheet.getRange(2, 5).setNumberFormat('+#,##0;-#,##0;0').setFontColor('#B22222').setFontWeight('bold');
+  // G2: クレ+電子ラベル, H2: 合計金額
+  sheet.getRange(2, 7).setValue('クレ+電子').setFontWeight('bold').setHorizontalAlignment('center');
+  sheet.getRange(2, 8).setFormula('=SUMIF(J4:J,"クレジットカード",B4:B)+SUMIF(J4:J,"電子決済",B4:B)');
+  sheet.getRange(2, 8).setNumberFormat('#,##0').setFontWeight('bold').setHorizontalAlignment('center');
 }
 
 // ==================== 行操作 ====================
