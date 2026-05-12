@@ -712,7 +712,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 234;
+const APP_VERSION = 235;
 const APP_BUILD_DATE = '2026/05/11';
 
 // ===== ストレージ =====
@@ -762,9 +762,9 @@ const DEFAULT_CATS = [
   {id:'cat_tree_day',   name:'ツリーハウス昼',      bg:'#f0fff8',border:'#80c8a0',text:'#1a4a30',price:'#888'},
   {id:'cat_bbq',        name:'BBQ',                 bg:'#eef4ff',border:'#7090d0',text:'#204080',price:'#888'},
   {id:'cat_stay_tree',  name:'宿泊：ツリーハウス',  bg:'#F5F0E8',border:'#B09060',text:'#604020',price:'#888'},
-  {id:'cat_stay_dome',  name:'宿泊：ドーム',        bg:'#EEF2F6',border:'#8AACC8',text:'#2C4870',price:'#888'},
+  {id:'cat_stay_dome',  name:'宿泊：ドーム',        bg:'#EEF2F6',border:'#9088C0',text:'#2C4870',price:'#888'},
   {id:'cat_stay_tent',  name:'宿泊：空中テント',    bg:'#FAF0E6',border:'#C89060',text:'#5A3010',price:'#888'},
-  {id:'cat_stay_hm',    name:'宿泊：ハンモック',    bg:'#F4F0E4',border:'#A89060',text:'#504028',price:'#888'},
+  {id:'cat_stay_hm',    name:'宿泊：ハンモック',    bg:'#EBF3FA',border:'#78A8CC',text:'#1E4A78',price:'#888'},
   {id:'cat_rental',     name:'備品レンタル',        bg:'#fffaf0',border:'#e8c878',text:'#6b4f20',price:'#888'},
   {id:'cat_pet',        name:'ペット',              bg:'#fff0f8',border:'#e8a0c0',text:'#7a2050',price:'#888'},
   {id:'cat_uketsuke',   name:'受付飲食',            bg:'#fff0f0',border:'#d09090',text:'#502020',price:'#888'},
@@ -802,8 +802,8 @@ const DEFAULT_ITEMS = [
   {id:'i_st_t2',  name:'テント②ホワイト',   price:7000, cat:'cat_stay_tent',stock:1, stay_prices:{1:9000,2:7000,3:7000}, dotColor:'#C0C8D0', nameParts:[{text:'テント②',color:'#1a1a1a'},{text:'ホワイト',color:'#1a1a1a'}]},
   {id:'i_st_t3',  name:'テント③ベージュ',   price:7000, cat:'cat_stay_tent',stock:1, stay_prices:{1:9000,2:7000,3:7000}, dotColor:'#C8A870', nameParts:[{text:'テント③',color:'#1a1a1a'},{text:'ベージュ',color:'#1a1a1a'}]},
   // 宿泊：ハンモック（⑥ 2+3名構成に変更）
-  {id:'i_st_h1',name:'ハンモック①',price:6000,cat:'cat_stay_hm',stock:1,stay_prices:{1:6000,2:5000,3:4000,4:4000,5:4000}, dotColor:'#B09060'},
-  {id:'i_st_h2',name:'ハンモック②',price:6000,cat:'cat_stay_hm',stock:1,stay_prices:{1:6000,2:5000,3:4000,4:4000,5:4000}, dotColor:'#B09060'},
+  {id:'i_st_h1',name:'ハンモック①',price:6000,cat:'cat_stay_hm',stock:1,stay_prices:{1:6000,2:5000,3:4000,4:4000,5:4000}, dotColor:'#5A90B8'},
+  {id:'i_st_h2',name:'ハンモック②',price:6000,cat:'cat_stay_hm',stock:1,stay_prices:{1:6000,2:5000,3:4000,4:4000,5:4000}, dotColor:'#5A90B8'},
   // 備品レンタル
   {id:'i_pet_01', name:'ペット', price:3000, cat:'cat_pet', stock:99, free_mura:false},
   {id:'i_b01', name:'焚火台セット',        price:1500,cat:'cat_rental',stock:7, free_mura:false},
@@ -903,9 +903,9 @@ let cats = ld(KEYS.cats) || DEFAULT_CATS;
 (function(){
   var newColors={
     cat_stay_tree:{bg:'#F5F0E8',border:'#B09060',text:'#604020'},
-    cat_stay_dome:{bg:'#EEF2F6',border:'#8AACC8',text:'#2C4870'},
+    cat_stay_dome:{bg:'#EEF2F6',border:'#9088C0',text:'#2C4870'},
     cat_stay_tent:{bg:'#FAF0E6',border:'#C89060',text:'#5A3010'},
-    cat_stay_hm:  {bg:'#F4F0E4',border:'#A89060',text:'#504028'},
+    cat_stay_hm:  {bg:'#EBF3FA',border:'#78A8CC',text:'#1E4A78'},
   };
   var changed=false;
   cats.forEach(function(cat){
