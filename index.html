@@ -714,8 +714,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 239;
-const APP_BUILD_DATE = '2026/05/11';
+const APP_VERSION = 240;
+const APP_BUILD_DATE = '2026/05/12';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbwO3nrFBG7gDCwbRALgqReIO4Axyfm5mjfgIk9VLyh5o80_qSx8y70SqtYkuCtCpe8BXA/exec';
@@ -1816,7 +1816,7 @@ function confirmPayment(){
   const isPaid = discountItems.find(d=>d.key===activeDiscount)?.type==='paid';
   var saleDatetime;
   if(nextDayMode){
-    var nd=new Date(); nd.setDate(nd.getDate()+1);
+    var nd=new Date(); nd.setDate(nd.getDate()+1); nd.setHours(8,0,0,0);
     saleDatetime=nd.toISOString();
   } else {
     saleDatetime=new Date().toISOString();
