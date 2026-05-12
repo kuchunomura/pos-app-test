@@ -715,7 +715,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 241;
+const APP_VERSION = 242;
 const APP_BUILD_DATE = '2026/05/12';
 
 // ===== ストレージ =====
@@ -3282,6 +3282,7 @@ function openSaleDetail(saleId){
     '<div style="font-size:10px;color:var(--text2);margin-bottom:6px;word-break:break-all;">ID: '+r.id+'</div>'+
     '<div style="background:#f9f9f9;border-radius:8px;padding:12px;font-size:13px;">'+
     '<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:var(--text2);">日時</span><span>'+dtToDisplay(r.datetime)+'</span></div>'+
+    (r.nextDay?'<div style="margin-bottom:6px;background:#fff3cd;color:#7a5500;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;text-align:center;">🌙 前日繰越（翌営業日計上）</div>':'')+
     '<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:var(--text2);">支払</span><span style="font-weight:600;">'+mLabel+(r.paid?' <span style="font-size:11px;color:var(--blue);">支払済</span>':'')+'</span></div>'+
     '<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:var(--text2);">割引</span><span>'+discLabel+'</span></div>'+
     '<div style="border-top:1px solid var(--border);padding-top:8px;margin-bottom:8px;">'+iRows+'</div>'+
