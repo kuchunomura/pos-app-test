@@ -724,7 +724,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 253;
+const APP_VERSION = 254;
 const APP_BUILD_DATE = '2026/05/12';
 
 // ===== ストレージ =====
@@ -1130,6 +1130,16 @@ function updateCatTimeSlots(){
 }
 
 
+// グループ内のcat-header高さを揃えてボタン行を一致させる
+function equalizeGroupHeaders(){
+  document.querySelectorAll('[data-cat-group]').forEach(function(wrap){
+    var headers = wrap.querySelectorAll('.cat-header');
+    var maxH = 0;
+    headers.forEach(function(h){ h.style.minHeight=''; maxH=Math.max(maxH,h.offsetHeight); });
+    headers.forEach(function(h){ h.style.minHeight=maxH+'px'; });
+  });
+}
+
 // カテゴリーグループ（横並び表示）
 const CAT_GROUPS = [
   ['cat_tree_day','cat_bbq'],
@@ -1247,6 +1257,7 @@ function renderPOS(){
         const grp=getCatGroup(cat.id);
         const wrap=document.createElement('div');
         wrap.style.cssText='display:flex;gap:6px;';
+        wrap.dataset.catGroup='1';
         section.style.flex=(grp[0]==='cat_tree_day')?'2':'1';
         wrap.appendChild(section);
         grp.slice(1).forEach(function(fId){
@@ -1292,6 +1303,7 @@ function renderPOS(){
         const grp=getCatGroup(cat.id);
         const wrap=document.createElement('div');
         wrap.style.cssText='display:flex;gap:6px;';
+        wrap.dataset.catGroup='1';
         section.style.flex=(grp[0]==='cat_tree_day')?'2':'1';
         wrap.appendChild(section);
         grp.slice(1).forEach(function(fId){
@@ -1316,6 +1328,7 @@ function renderPOS(){
       hasAny=true;
     });
   }
+  setTimeout(equalizeGroupHeaders, 0);
 }
 
 function shadeColor(col, pct){
