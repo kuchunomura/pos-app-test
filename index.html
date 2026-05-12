@@ -724,7 +724,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 251;
+const APP_VERSION = 252;
 const APP_BUILD_DATE = '2026/05/12';
 
 // ===== ストレージ =====
@@ -958,6 +958,8 @@ let activeMura = false;  // 村民割引トグル（activeDiscountとは独立�
 let nextDayMode = 0; // 翌日計上モード: 0=OFF, 1=翌日, 2=翌々日
 let paymentDoneTimer = null;
 let paymentDoneCountdownInterval = null;
+let lastPaidSessionItems = []; // 決済完了後3分間、時間スロットハイライト保持用
+let lastPaidTime = 0;
 let carryOverTotal = 0;      // 前日繰越合計（GASから取得）
 let carryOverFetchDate = ''; // 最後にGASから取得した日付（日付またぎ検出用）
 let currentPayMethod = '';
@@ -1048,12 +1050,26 @@ function getCatTimeSlots(catId){
   var slots = [{min:55},{min:115},{min:0}];
   var now = new Date();
   var sessionItems = cart.filter(function(c){ return c.cat===catId && !c.paidLabel; });
+  var hasCurrent = sessionItems.length > 0;
+  var useLastPaid = !hasCurrent && lastPaidTime && (Date.now()-lastPaidTime)<180000;
   var parts = slots.map(function(slot){
-    var inCart = sessionItems.some(function(c){
-      if(slot.min===0) return /1day/i.test(c.name)||/1DAY/.test(c.name);
-      var m55=c.name.match(/(\d+)分/);
-      return m55 && parseInt(m55[1])===slot.min;
-    });
+    var inCart;
+    if(hasCurrent){
+      inCart = sessionItems.some(function(c){
+        if(slot.min===0) return /1day/i.test(c.name)||/1DAY/.test(c.name);
+        var m55=c.name.match(/(\d+)分/);
+        return m55 && parseInt(m55[1])===slot.min;
+      });
+    } else if(useLastPaid){
+      inCart = lastPaidSessionItems.some(function(c){
+        if(c.cat!==catId) return false;
+        if(slot.min===0) return /1day/i.test(c.name)||/1DAY/.test(c.name);
+        var m55=c.name.match(/(\d+)分/);
+        return m55 && parseInt(m55[1])===slot.min;
+      });
+    } else {
+      inCart = false;
+    }
     var label = slot.min===0 ? '1DAY' : slot.min+'分';
     var endStr;
     if(slot.min===0){
@@ -1078,12 +1094,25 @@ function updateCatTimeSlots(){
     var catId = span.dataset.slotCat;
     var min = parseInt(span.dataset.slotMin);
     var closeHour = catId==='cat_walk' ? 17 : 16;
-    var inCart = cart.some(function(c){
-      if(c.cat!==catId || c.paidLabel) return false;
-      if(min===0) return /1day/i.test(c.name)||/1DAY/.test(c.name);
-      var m55=c.name.match(/(\d+)分/);
-      return m55 && parseInt(m55[1])===min;
-    });
+    var currentItems = cart.filter(function(c){ return c.cat===catId && !c.paidLabel; });
+    var hasCur = currentItems.length > 0;
+    var inCart;
+    if(hasCur){
+      inCart = currentItems.some(function(c){
+        if(min===0) return /1day/i.test(c.name)||/1DAY/.test(c.name);
+        var m55=c.name.match(/(\d+)分/);
+        return m55 && parseInt(m55[1])===min;
+      });
+    } else if(lastPaidTime && (Date.now()-lastPaidTime)<180000){
+      inCart = lastPaidSessionItems.some(function(c){
+        if(c.cat!==catId) return false;
+        if(min===0) return /1day/i.test(c.name)||/1DAY/.test(c.name);
+        var m55=c.name.match(/(\d+)分/);
+        return m55 && parseInt(m55[1])===min;
+      });
+    } else {
+      inCart = false;
+    }
     var label = min===0 ? '1DAY' : min+'分';
     var endStr;
     if(min===0){
@@ -1962,6 +1991,9 @@ function confirmPayment(){
   lastSaleId=record.id;
   autoSyncSale(record);
   if(nextDayMode) updateCarryOverBanner();
+  // 決済完了後3分間、時間スロットハイライトを保持するためカートを保存
+  lastPaidSessionItems = cart.filter(function(c){ return !c.paidLabel; });
+  lastPaidTime = Date.now();
   closePaymentModal();
   const methodLabel={cash:'現金',card:'クレジットカード',other:'電子決済'}[currentPayMethod]||currentPayMethod;
   document.getElementById('done-amount').textContent='¥'+total.toLocaleString();
