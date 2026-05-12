@@ -715,7 +715,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 242;
+const APP_VERSION = 243;
 const APP_BUILD_DATE = '2026/05/12';
 
 // ===== ストレージ =====
@@ -947,7 +947,8 @@ let selectedAttrs = {age:[],nationality:[]};
 let activeDiscount = ''; // site key or 'pass_day' or 'pass_night' or 'stay_guest'
 let activeMura = false;  // 村民割引トグル（activeDiscountとは独立）
 let nextDayMode = false; // 翌日計上モード
-let carryOverTotal = 0;  // 前日繰越合計（GASから取得）
+let carryOverTotal = 0;      // 前日繰越合計（GASから取得）
+let carryOverFetchDate = ''; // 最後にGASから取得した日付（日付またぎ検出用）
 let currentPayMethod = '';
 let editMode = false;
 let filterCatId = 'all';
@@ -1493,6 +1494,7 @@ async function fetchCarryOverFromGAS(){
   if(!url) return;
   var now=new Date();
   var dateStr=(now.getMonth()+1)+'/'+now.getDate();
+  carryOverFetchDate=now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2)+'-'+('0'+now.getDate()).slice(-2);
   try{
     var resp=await fetch(url+'?action=getCarryOver&date='+encodeURIComponent(dateStr),{redirect:'follow'});
     var json=await resp.json();
@@ -1813,6 +1815,15 @@ const DEFAULT_ATTRS={
   nationality:['アジア','台湾','中華','ヨーロッパ','オセアニア','インド','南中米','その他外国人'],
 };
 let ATTRS = ld('pos_attrs') || JSON.parse(JSON.stringify(DEFAULT_ATTRS));
+// リピーター追加マイグレーション（カップルの右）
+(function(){
+  var ag=ATTRS.age;
+  if(ag&&ag.indexOf('リピーター')===-1){
+    var cp=ag.indexOf('カップル');
+    if(cp!==-1)ag.splice(cp+1,0,'リピーター');else ag.push('リピーター');
+    sv('pos_attrs',ATTRS);
+  }
+})();
 
 
 // ===== 決済 =====
@@ -2258,6 +2269,7 @@ function renderSales(){
     const tr=document.createElement('tr');
     if(r.flagged) tr.style.background='#fff5f5';
     tr.style.cursor='pointer';
+    if(r.nextDay) tr.style.background='#fffbf0';
     const itemStr=r.items.map(i=>i.name+(i.qty>1?'×'+i.qty:'')).join('、');
     const methodLabel={cash:'現金',card:'カード',other:'電子'}[r.method]||r.method;
     const discLabel=r.discount==='mura'?'村内半額':r.discount==='stay_guest'?'宿泊者':r.discount?r.discount:'';
@@ -2266,7 +2278,7 @@ function renderSales(){
     const attrStr=attrParts.join(' ');
     tr.innerHTML=
       '<td style="text-align:center;font-size:14px;cursor:pointer;" onclick="event.stopPropagation();quickToggleFlag(\''+r.id+'\',this)">'+(r.flagged?'🔴':'⚪')+'</td>'+
-      '<td style="white-space:nowrap;font-size:10px">'+dtToShort(r.datetime)+'</td>'+
+      '<td style="white-space:nowrap;font-size:10px">'+(r.nextDay?'<span style="color:#7a5500;font-weight:700;">🌙</span> ':'')+dtToShort(r.datetime)+'</td>'+
       '<td style="font-size:10px;min-width:160px;max-width:220px;">'+
         '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+itemStr+'</div>'+
         (attrStr?'<div style="font-size:9px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+attrStr+'</div>':'')+
@@ -3335,9 +3347,11 @@ function deleteSaleFromDetail(){
   const ml={cash:'現金',card:'カード',other:'電子'}[r.method]||r.method;
   const is=r.items.slice(0,3).map(i=>i.name+(i.qty>1?'×'+i.qty:'')).join('、')+(r.items.length>3?'…':'');
   if(!confirm('この売上を削除しますか？\n\n'+dtToDisplay(r.datetime)+'\n'+is+'\n¥'+r.total.toLocaleString()+'（'+ml+'）\n\n※取り消せません'))return;
+  const wasNextDay=!!r.nextDay;
   const deletedId=currentDetailSaleId;
   sales=sales.filter(s=>s.id!==deletedId);
   sv(KEYS.sales,sales);autoDeleteSale(deletedId);
+  if(wasNextDay){updateCarryOverBanner();fetchCarryOverFromGAS();}
   document.getElementById('sale-detail-modal').classList.remove('open');
   renderSales();showToast('✓ 削除しました');
 }
@@ -3518,6 +3532,9 @@ function updateClocks(){
   if(now.getSeconds() === 0){
     const fb = document.getElementById('timer-fac-btns');
     if(fb) renderTimerFacBtns();
+    // 日付が変わったら繰越バッジをリセット・再取得
+    var todayStr=now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2)+'-'+('0'+now.getDate()).slice(-2);
+    if(carryOverFetchDate && carryOverFetchDate!==todayStr) fetchCarryOverFromGAS();
   }
 }
 setInterval(updateClocks, 1000);
