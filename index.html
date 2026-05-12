@@ -724,7 +724,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 250;
+const APP_VERSION = 251;
 const APP_BUILD_DATE = '2026/05/12';
 
 // ===== ストレージ =====
@@ -1065,9 +1065,10 @@ function getCatTimeSlots(catId){
     }
     var color = inCart ? '#8B3A3A' : '#777';
     var weight = inCart ? '700' : '500';
-    return '<span data-slot-cat="'+catId+'" data-slot-min="'+slot.min+'" style="color:'+color+';font-weight:'+weight+';font-size:13px;white-space:nowrap;">'+label+endStr+'</span>';
+    var fsize = inCart ? '15px' : '13px';
+    return '<span data-slot-cat="'+catId+'" data-slot-min="'+slot.min+'" style="color:'+color+';font-weight:'+weight+';font-size:'+fsize+';white-space:nowrap;">'+label+endStr+'</span>';
   });
-  return '<span style="margin-left:1em;display:inline-flex;gap:8px;">'+parts.join('')+'</span>';
+  return '<span style="margin-left:1em;display:inline-flex;gap:14px;align-items:center;">'+parts.join('')+'</span>';
 }
 
 // 毎分ヘッダーの時間スロット終了時刻をDOM更新（renderPOS不要）
@@ -1095,6 +1096,7 @@ function updateCatTimeSlots(){
     span.textContent = label+endStr;
     span.style.color = inCart ? '#8B3A3A' : '#777';
     span.style.fontWeight = inCart ? '700' : '500';
+    span.style.fontSize = inCart ? '15px' : '13px';
   });
 }
 
