@@ -724,7 +724,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 254;
+const APP_VERSION = 255;
 const APP_BUILD_DATE = '2026/05/12';
 
 // ===== ストレージ =====
@@ -1908,7 +1908,7 @@ function renderAttrSettings(){
 
 
 const DEFAULT_ATTRS={
-  age:['お一人','子連れ','カップル','リピーター','10〜20代','30〜40代','50代','60代以上'],
+  age:['お一人','子連れ','カップル','友人同士','リピーター','10〜20代','30〜40代','50代','60代以上'],
   nationality:['アジア','台湾','中華','ヨーロッパ','オセアニア','インド','南中米','その他外国人'],
 };
 let ATTRS = ld('pos_attrs') || JSON.parse(JSON.stringify(DEFAULT_ATTRS));
@@ -1918,6 +1918,15 @@ let ATTRS = ld('pos_attrs') || JSON.parse(JSON.stringify(DEFAULT_ATTRS));
   if(ag&&ag.indexOf('リピーター')===-1){
     var cp=ag.indexOf('カップル');
     if(cp!==-1)ag.splice(cp+1,0,'リピーター');else ag.push('リピーター');
+    sv('pos_attrs',ATTRS);
+  }
+})();
+// 友人同士追加マイグレーション（カップルの右）
+(function(){
+  var ag=ATTRS.age;
+  if(ag&&ag.indexOf('友人同士')===-1){
+    var cp=ag.indexOf('カップル');
+    if(cp!==-1)ag.splice(cp+1,0,'友人同士');else ag.push('友人同士');
     sv('pos_attrs',ATTRS);
   }
 })();
