@@ -228,7 +228,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
         <h3>🛒 カート</h3>
         <span id="cart-count" style="font-size:11px;color:var(--text2)"></span>
       </div>
-      <div id="next-day-banner" style="display:none;background:#7a5500;color:#fff;padding:5px 12px;font-size:12px;font-weight:700;text-align:center;letter-spacing:0.5px;">🌙 翌日計上モード ON — 決済は翌営業日の売上になります</div>
+      <div id="carry-over-badge" style="display:none;background:#fff3cd;color:#7a5500;padding:4px 12px;font-size:12px;font-weight:700;text-align:center;">前日繰越: ¥0</div>
+      <div id="next-day-banner" style="display:none;background:#7a5500;color:#fff;padding:5px 12px;font-size:12px;font-weight:700;text-align:center;letter-spacing:0.5px;">🌙 翌日計上モード ON</div>
       <div class="cart-list" id="cart-list"></div>
       <div class="cart-footer">
         <div id="orig-amount-row" class="orig-amount" style="display:none"></div>
@@ -714,7 +715,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 240;
+const APP_VERSION = 241;
 const APP_BUILD_DATE = '2026/05/12';
 
 // ===== ストレージ =====
@@ -946,6 +947,7 @@ let selectedAttrs = {age:[],nationality:[]};
 let activeDiscount = ''; // site key or 'pass_day' or 'pass_night' or 'stay_guest'
 let activeMura = false;  // 村民割引トグル（activeDiscountとは独立）
 let nextDayMode = false; // 翌日計上モード
+let carryOverTotal = 0;  // 前日繰越合計（GASから取得）
 let currentPayMethod = '';
 let editMode = false;
 let filterCatId = 'all';
@@ -1455,6 +1457,7 @@ function toggleNextDay(){
   renderNextDayBtn();
   var banner=document.getElementById('next-day-banner');
   if(banner) banner.style.display=nextDayMode?'block':'none';
+  if(nextDayMode) updateCarryOverBanner();
 }
 
 function renderNextDayBtn(){
@@ -1466,6 +1469,46 @@ function renderNextDayBtn(){
   } else {
     btn.style.background='';btn.style.color='';btn.style.borderColor='';
     btn.textContent='🌙 翌日';
+  }
+}
+
+// 翌日計上モード中の繰越累計（ローカル計算）
+function calcLocalCarryOver(){
+  var tomorrow=new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+  var tStr=tomorrow.getFullYear()+'-'+String(tomorrow.getMonth()+1).padStart(2,'0')+'-'+String(tomorrow.getDate()).padStart(2,'0');
+  return sales.filter(function(s){return s.nextDay&&dtToDate(s.datetime)===tStr;})
+              .reduce(function(sum,s){return sum+(s.total||0);},0);
+}
+
+function updateCarryOverBanner(){
+  var banner=document.getElementById('next-day-banner');
+  if(!banner) return;
+  var total=calcLocalCarryOver();
+  banner.innerHTML='🌙 翌日計上モード ON &nbsp;|&nbsp; 繰越累計: <strong>¥'+total.toLocaleString()+'</strong>';
+}
+
+// 前日繰越合計をGASから取得してバッジに表示（起動時・複数デバイス対応）
+async function fetchCarryOverFromGAS(){
+  var url=ld(KEYS.gas)||DEFAULT_GAS_URL;
+  if(!url) return;
+  var now=new Date();
+  var dateStr=(now.getMonth()+1)+'/'+now.getDate();
+  try{
+    var resp=await fetch(url+'?action=getCarryOver&date='+encodeURIComponent(dateStr),{redirect:'follow'});
+    var json=await resp.json();
+    carryOverTotal=(json&&json.total)?json.total:0;
+  }catch(e){carryOverTotal=0;}
+  renderCarryOverBadge();
+}
+
+function renderCarryOverBadge(){
+  var badge=document.getElementById('carry-over-badge');
+  if(!badge) return;
+  if(carryOverTotal>0){
+    badge.style.display='';
+    badge.textContent='前日繰越: ¥'+carryOverTotal.toLocaleString();
+  }else{
+    badge.style.display='none';
   }
 }
 
@@ -1841,6 +1884,7 @@ function confirmPayment(){
   sales.push(record);sv(KEYS.sales,sales);
   lastSaleId=record.id;
   autoSyncSale(record);
+  if(nextDayMode) updateCarryOverBanner();
   closePaymentModal();
   const methodLabel={cash:'現金',card:'クレジットカード',other:'電子決済'}[currentPayMethod]||currentPayMethod;
   document.getElementById('done-amount').textContent='¥'+total.toLocaleString();
@@ -3867,6 +3911,7 @@ restoreFromIDB().then(()=>{
   if(_te) _te.value=_t;
   updateFilterBtnState();
   renderCatFilterTabs();renderPOS();renderCart();renderDiscountBar();renderAttrs();renderHoldTabs();renderSettings();renderWeatherDisplay();
+  fetchCarryOverFromGAS();
 });
 </script>
 </body>

@@ -15,6 +15,9 @@ const NAT_COL     = 27; // AA列: 国籍別
 
 function doGet(e) {
   try {
+    if (e && e.parameter && e.parameter.action === 'getCarryOver') {
+      return getCarryOverTotal(e.parameter.date || '');
+    }
     var d = (e && e.parameter && e.parameter.d) ? JSON.parse(decodeURIComponent(e.parameter.d)) : null;
     if (!d) return ok();
     if (d.type === 'test') return ok();
@@ -24,6 +27,29 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify({status:'error', message:err.message}))
       .setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+// 前日繰越合計を返す（GETリクエスト用）
+function getCarryOverTotal(dateStr) {
+  var total = 0;
+  try {
+    var ss = SpreadsheetApp.openById(SS_ID);
+    var sheet = ss.getSheetByName(dateStr + '売上');
+    if (sheet) {
+      var lastRow = sheet.getLastRow();
+      if (lastRow >= 4) {
+        var bVals = sheet.getRange(4, 2,  lastRow - 3, 1).getValues(); // B: 売上合計
+        var nVals = sheet.getRange(4, 14, lastRow - 3, 1).getValues(); // N: メモ
+        for (var i = 0; i < bVals.length; i++) {
+          if (bVals[i][0] && String(nVals[i][0]).indexOf('前日繰越') !== -1) {
+            total += Number(bVals[i][0]) || 0;
+          }
+        }
+      }
+    }
+  } catch(err) {}
+  return ContentService.createTextOutput(JSON.stringify({status:'ok', total: total}))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function doPost(e) {
@@ -133,6 +159,10 @@ function setupCashInputRow(sheet) {
   sheet.getRange(2, 7).setValue('クレ+電子').setFontWeight('bold').setHorizontalAlignment('center');
   sheet.getRange(2, 8).setFormula('=SUMIF(J4:J,"クレジットカード",B4:B)+SUMIF(J4:J,"電子決済",B4:B)');
   sheet.getRange(2, 8).setNumberFormat('#,##0').setFontWeight('bold').setHorizontalAlignment('center');
+  // K2: 前日繰越ラベル, L2: SUMIF（メモに「前日繰越」を含む行の売上合計）
+  sheet.getRange(2, 11).setValue('前日繰越').setFontWeight('bold').setHorizontalAlignment('center');
+  sheet.getRange(2, 12).setFormula('=SUMIF(N4:N,"*前日繰越*",B4:B)');
+  sheet.getRange(2, 12).setNumberFormat('#,##0').setFontWeight('bold').setHorizontalAlignment('center').setBackground('#fff3cd');
 }
 
 // ==================== 行操作 ====================
