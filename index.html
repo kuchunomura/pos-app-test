@@ -191,7 +191,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
     <div class="pos-left">
       <div class="pos-top-bar">
         <div class="cat-filter-tabs" id="cat-filter-tabs"></div>
-        <button id="next-day-btn" class="edit-btn" onclick="toggleNextDay()" title="翌日計上モード">🌙 翌日</button>
+        <button id="next-day-btn"  class="edit-btn" onclick="toggleNextDay(1)" title="翌日計上モード">🌙 翌日</button>
+        <button id="next-day2-btn" class="edit-btn" onclick="toggleNextDay(2)" title="翌々日計上モード">🌙🌙 翌々日</button>
         <button class="edit-btn" id="edit-btn" onclick="toggleEditMode()">✏️ 編集</button>
       </div>
       <div class="pos-items-area" id="pos-items-area"></div>
@@ -381,6 +382,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
     <div class="date-filter" style="margin-bottom:10px;">
       <button class="btn-sm2" id="filter-btn-today" onclick="setFilterToday()">📅 今日</button>
       <button class="btn-sm2" id="filter-btn-yesterday" onclick="setFilterYesterday()">昨日</button>
+      <button class="btn-sm2" id="filter-btn-tomorrow" onclick="setFilterTomorrow()">明日</button>
+      <button class="btn-sm2" id="filter-btn-day2" onclick="setFilterDayAfterTomorrow()">明後日</button>
       <input type="date" id="filter-from" onchange="updateFilterBtnState()">
       <span style="font-size:12px">〜</span>
       <input type="date" id="filter-to" onchange="updateFilterBtnState()">
@@ -715,7 +718,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 243;
+const APP_VERSION = 244;
 const APP_BUILD_DATE = '2026/05/12';
 
 // ===== ストレージ =====
@@ -946,7 +949,7 @@ let cart = [];
 let selectedAttrs = {age:[],nationality:[]};
 let activeDiscount = ''; // site key or 'pass_day' or 'pass_night' or 'stay_guest'
 let activeMura = false;  // 村民割引トグル（activeDiscountとは独立）
-let nextDayMode = false; // 翌日計上モード
+let nextDayMode = 0; // 翌日計上モード: 0=OFF, 1=翌日, 2=翌々日
 let carryOverTotal = 0;      // 前日繰越合計（GASから取得）
 let carryOverFetchDate = ''; // 最後にGASから取得した日付（日付またぎ検出用）
 let currentPayMethod = '';
@@ -1453,39 +1456,43 @@ function reorderCats(srcId,dstId){
   catOrder=n;sv(KEYS.catOrder,catOrder);renderPOS();
 }
 
-function toggleNextDay(){
-  nextDayMode=!nextDayMode;
+function toggleNextDay(mode){
+  nextDayMode=(nextDayMode===mode)?0:mode;
   renderNextDayBtn();
   var banner=document.getElementById('next-day-banner');
-  if(banner) banner.style.display=nextDayMode?'block':'none';
-  if(nextDayMode) updateCarryOverBanner();
+  if(banner) banner.style.display=nextDayMode>0?'block':'none';
+  if(nextDayMode>0) updateCarryOverBanner();
 }
 
 function renderNextDayBtn(){
-  var btn=document.getElementById('next-day-btn');
-  if(!btn) return;
-  if(nextDayMode){
-    btn.style.background='#c0392b';btn.style.color='#fff';btn.style.borderColor='#c0392b';
-    btn.textContent='🌙 翌日計上';
-  } else {
-    btn.style.background='';btn.style.color='';btn.style.borderColor='';
-    btn.textContent='🌙 翌日';
+  var b1=document.getElementById('next-day-btn');
+  var b2=document.getElementById('next-day2-btn');
+  if(b1){
+    if(nextDayMode===1){b1.style.background='#c0392b';b1.style.color='#fff';b1.style.borderColor='#c0392b';b1.textContent='🌙 翌日計上';}
+    else{b1.style.background='';b1.style.color='';b1.style.borderColor='';b1.textContent='🌙 翌日';}
+  }
+  if(b2){
+    if(nextDayMode===2){b2.style.background='#7d3c98';b2.style.color='#fff';b2.style.borderColor='#7d3c98';b2.textContent='🌙🌙 翌々日計上';}
+    else{b2.style.background='';b2.style.color='';b2.style.borderColor='';b2.textContent='🌙🌙 翌々日';}
   }
 }
 
-// 翌日計上モード中の繰越累計（ローカル計算）
+// 翌日/翌々日計上モード中の繰越累計（直近24h以内に作成された繰越売上）
 function calcLocalCarryOver(){
-  var tomorrow=new Date(); tomorrow.setDate(tomorrow.getDate()+1);
-  var tStr=tomorrow.getFullYear()+'-'+String(tomorrow.getMonth()+1).padStart(2,'0')+'-'+String(tomorrow.getDate()).padStart(2,'0');
-  return sales.filter(function(s){return s.nextDay&&dtToDate(s.datetime)===tStr;})
-              .reduce(function(sum,s){return sum+(s.total||0);},0);
+  var now=Date.now();
+  return sales.filter(function(s){
+    if(!s.nextDay) return false;
+    var ts=parseInt(String(s.id).replace('s_',''))||0;
+    return (now-ts)<86400000;
+  }).reduce(function(sum,s){return sum+(s.total||0);},0);
 }
 
 function updateCarryOverBanner(){
   var banner=document.getElementById('next-day-banner');
   if(!banner) return;
   var total=calcLocalCarryOver();
-  banner.innerHTML='🌙 翌日計上モード ON &nbsp;|&nbsp; 繰越累計: <strong>¥'+total.toLocaleString()+'</strong>';
+  var label=nextDayMode===2?'🌙🌙 翌々日計上モード ON':'🌙 翌日計上モード ON';
+  banner.innerHTML=label+' &nbsp;|&nbsp; 繰越累計: <strong>¥'+total.toLocaleString()+'</strong>';
 }
 
 // 前日繰越合計をGASから取得してバッジに表示（起動時・複数デバイス対応）
@@ -1869,14 +1876,17 @@ function confirmPayment(){
   }
   const isPaid = discountItems.find(d=>d.key===activeDiscount)?.type==='paid';
   var saleDatetime;
-  if(nextDayMode){
-    var nd=new Date(); nd.setDate(nd.getDate()+1); nd.setHours(8,0,0,0);
+  if(nextDayMode>0){
+    var nd=new Date(); nd.setDate(nd.getDate()+nextDayMode); nd.setHours(8,0,0,0);
     saleDatetime=nd.toISOString();
   } else {
     saleDatetime=new Date().toISOString();
   }
   var saleMemo = currentPayMethod==='other' ? '電子決済、伝票2枚だからレジ締め注意' : '';
-  if(nextDayMode) saleMemo = saleMemo ? '前日繰越 / '+saleMemo : '前日繰越';
+  if(nextDayMode>0){
+    var carryLabel=nextDayMode===2?'前々日繰越':'前日繰越';
+    saleMemo = saleMemo ? carryLabel+' / '+saleMemo : carryLabel;
+  }
   const record={
     id:'s_'+Date.now(),datetime:saleDatetime,
     items:cart.map(i=>({...i})),total,method:currentPayMethod,
@@ -2435,12 +2445,30 @@ function localDateStr(d){
 function updateFilterBtnState(){
   var t=localDateStr();
   var y=localDateStr(new Date(Date.now()-86400000));
+  var tm=localDateStr(new Date(Date.now()+86400000));
+  var d2=localDateStr(new Date(Date.now()+2*86400000));
   var from=document.getElementById('filter-from').value;
   var to=document.getElementById('filter-to').value;
   var tb=document.getElementById('filter-btn-today');
   var yb=document.getElementById('filter-btn-yesterday');
-  if(tb) tb.classList.toggle('active',from===t&&to===t);
-  if(yb) yb.classList.toggle('active',from===y&&to===y);
+  var tmb=document.getElementById('filter-btn-tomorrow');
+  var d2b=document.getElementById('filter-btn-day2');
+  if(tb)  tb.classList.toggle('active',from===t&&to===t);
+  if(yb)  yb.classList.toggle('active',from===y&&to===y);
+  if(tmb) tmb.classList.toggle('active',from===tm&&to===tm);
+  if(d2b) d2b.classList.toggle('active',from===d2&&to===d2);
+}
+function setFilterTomorrow(){
+  var tm=localDateStr(new Date(Date.now()+86400000));
+  document.getElementById('filter-from').value=tm;
+  document.getElementById('filter-to').value=tm;
+  updateFilterBtnState();renderSales();
+}
+function setFilterDayAfterTomorrow(){
+  var d2=localDateStr(new Date(Date.now()+2*86400000));
+  document.getElementById('filter-from').value=d2;
+  document.getElementById('filter-to').value=d2;
+  updateFilterBtnState();renderSales();
 }
 function setFilterToday(){
   var t=localDateStr();

@@ -41,7 +41,7 @@ function getCarryOverTotal(dateStr) {
         var bVals = sheet.getRange(4, 2,  lastRow - 3, 1).getValues(); // B: 売上合計
         var nVals = sheet.getRange(4, 14, lastRow - 3, 1).getValues(); // N: メモ
         for (var i = 0; i < bVals.length; i++) {
-          if (bVals[i][0] && String(nVals[i][0]).indexOf('前日繰越') !== -1) {
+          if (bVals[i][0] && String(nVals[i][0]).indexOf('繰越') !== -1) {
             total += Number(bVals[i][0]) || 0;
           }
         }
@@ -159,9 +159,9 @@ function setupCashInputRow(sheet) {
   sheet.getRange(2, 7).setValue('クレ+電子').setFontWeight('bold').setHorizontalAlignment('center');
   sheet.getRange(2, 8).setFormula('=SUMIF(J4:J,"クレジットカード",B4:B)+SUMIF(J4:J,"電子決済",B4:B)');
   sheet.getRange(2, 8).setNumberFormat('#,##0').setFontWeight('bold').setHorizontalAlignment('center').setBackground('#e8e4ff');
-  // K2: 前日繰越ラベル, L2: SUMIF（メモに「前日繰越」を含む行の売上合計）
-  sheet.getRange(2, 11).setValue('前日繰越').setFontWeight('bold').setHorizontalAlignment('center').setBackground('#fff3cd');
-  sheet.getRange(2, 12).setFormula('=SUMIF(N4:N,"*前日繰越*",B4:B)');
+  // K2: 繰越合計ラベル, L2: SUMIF（前日繰越・前々日繰越を含む行の売上合計）
+  sheet.getRange(2, 11).setValue('繰越合計').setFontWeight('bold').setHorizontalAlignment('center').setBackground('#fff3cd');
+  sheet.getRange(2, 12).setFormula('=SUMIF(N4:N,"*繰越*",B4:B)');
   sheet.getRange(2, 12).setNumberFormat('#,##0').setFontWeight('bold').setHorizontalAlignment('center').setBackground('#fff3cd');
 }
 
@@ -289,7 +289,7 @@ function applyGroupBorders(sheet, startRow, rowCount, colCount) {
 
 function applyPaymentColors(sheet, row, payment, memo) {
   var bg = '';
-  if (String(memo || '').indexOf('前日繰越') !== -1) {
+  if (String(memo || '').indexOf('繰越') !== -1) {
     bg = '#fff3cd';
   } else if (payment === 'クレジットカード') {
     bg = '#f0f8ff';
