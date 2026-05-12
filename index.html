@@ -712,7 +712,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 233;
+const APP_VERSION = 234;
 const APP_BUILD_DATE = '2026/05/11';
 
 // ===== ストレージ =====
@@ -761,10 +761,10 @@ const DEFAULT_CATS = [
   {id:'cat_walk',       name:'空中ウォーク',        bg:'#f0f6ff',border:'#a0c0e8',text:'#2a4a70',price:'#888'},
   {id:'cat_tree_day',   name:'ツリーハウス昼',      bg:'#f0fff8',border:'#80c8a0',text:'#1a4a30',price:'#888'},
   {id:'cat_bbq',        name:'BBQ',                 bg:'#eef4ff',border:'#7090d0',text:'#204080',price:'#888'},
-  {id:'cat_stay_tree',  name:'宿泊：ツリーハウス',  bg:'#fff5f0',border:'#e0b090',text:'#7a3020',price:'#888'},
-  {id:'cat_stay_dome',  name:'宿泊：ドーム',        bg:'#fff5f7',border:'#e0a0b0',text:'#7a3050',price:'#888'},
-  {id:'cat_stay_tent',  name:'宿泊：空中テント',    bg:'#f5f0ff',border:'#b0a0e0',text:'#402070',price:'#888'},
-  {id:'cat_stay_hm',    name:'宿泊：ハンモック',    bg:'#f0fff5',border:'#90d0a0',text:'#204830',price:'#888'},
+  {id:'cat_stay_tree',  name:'宿泊：ツリーハウス',  bg:'#F5F0E8',border:'#B09060',text:'#604020',price:'#888'},
+  {id:'cat_stay_dome',  name:'宿泊：ドーム',        bg:'#EEF2F6',border:'#8AACC8',text:'#2C4870',price:'#888'},
+  {id:'cat_stay_tent',  name:'宿泊：空中テント',    bg:'#FAF0E6',border:'#C89060',text:'#5A3010',price:'#888'},
+  {id:'cat_stay_hm',    name:'宿泊：ハンモック',    bg:'#F4F0E4',border:'#A89060',text:'#504028',price:'#888'},
   {id:'cat_rental',     name:'備品レンタル',        bg:'#fffaf0',border:'#e8c878',text:'#6b4f20',price:'#888'},
   {id:'cat_pet',        name:'ペット',              bg:'#fff0f8',border:'#e8a0c0',text:'#7a2050',price:'#888'},
   {id:'cat_uketsuke',   name:'受付飲食',            bg:'#fff0f0',border:'#d09090',text:'#502020',price:'#888'},
@@ -795,7 +795,7 @@ const DEFAULT_ITEMS = [
   {id:'i_st_th',  name:'ツリーハウス',       price:12000,cat:'cat_stay_tree',stock:1, stay_prices:{1:14000,2:12000,3:10000,4:8000,5:8000}, dotColor:'#5A9050'},
   // 宿泊：ドーム
   {id:'i_st_dm',  name:'ドーム（ミラー）',   price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, dotColor:'#B0B0B0', nameParts:[{text:'ドーム',color:'#1a1a1a'},{text:'（ミラー）',color:'#1a1a1a'}]},
-  {id:'i_st_dt',  name:'ドーム（クリア）',     price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, dotColor:'#5BACD4', nameParts:[{text:'ドーム',color:'#1a1a1a'},{text:'（クリア）',color:'#1a1a1a'}]},
+  {id:'i_st_dt',  name:'ドーム（クリア）',     price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, dotColor:'#8ABCCC', nameParts:[{text:'ドーム',color:'#1a1a1a'},{text:'（クリア）',color:'#1a1a1a'}]},
   {id:'i_st_dg',  name:'ドーム（グレー）',   price:10000,cat:'cat_stay_dome',stock:1, stay_prices:{1:12000,2:10000,3:8000,4:7000,5:7000}, dotColor:'#888888', nameParts:[{text:'ドーム',color:'#1a1a1a'},{text:'（グレー）',color:'#1a1a1a'}]},
   // 宿泊：空中テント
   {id:'i_st_t1',  name:'テント①オレンジ',   price:7000, cat:'cat_stay_tent',stock:1, stay_prices:{1:9000,2:7000,3:7000}, dotColor:'#E07820', nameParts:[{text:'テント①',color:'#1a1a1a'},{text:'オレンジ',color:'#1a1a1a'}]},
@@ -898,6 +898,23 @@ let cats = ld(KEYS.cats) || DEFAULT_CATS;
     cats.splice(pi2+1,0,u);
     sv(KEYS.cats,cats);
   }
+})();
+// 宿泊カテゴリ背景色マイグレーション
+(function(){
+  var newColors={
+    cat_stay_tree:{bg:'#F5F0E8',border:'#B09060',text:'#604020'},
+    cat_stay_dome:{bg:'#EEF2F6',border:'#8AACC8',text:'#2C4870'},
+    cat_stay_tent:{bg:'#FAF0E6',border:'#C89060',text:'#5A3010'},
+    cat_stay_hm:  {bg:'#F4F0E4',border:'#A89060',text:'#504028'},
+  };
+  var changed=false;
+  cats.forEach(function(cat){
+    var nc=newColors[cat.id];
+    if(nc&&(cat.bg!==nc.bg||cat.border!==nc.border)){
+      cat.bg=nc.bg;cat.border=nc.border;cat.text=nc.text;changed=true;
+    }
+  });
+  if(changed) sv(KEYS.cats,cats);
 })();
 let items = ld(KEYS.items) || DEFAULT_ITEMS;
 let sales = ld(KEYS.sales) || [];
