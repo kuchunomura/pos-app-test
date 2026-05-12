@@ -724,7 +724,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 252;
+const APP_VERSION = 253;
 const APP_BUILD_DATE = '2026/05/12';
 
 // ===== ストレージ =====
@@ -1662,6 +1662,9 @@ function addToCart(item,cat){
     openStayModal(item, cat);
     return;
   }
+  // カートに追加した時点でlastPaidハイライトをリセット
+  lastPaidSessionItems = [];
+  lastPaidTime = 0;
   const paidBadge = getPaidBadge(item);
   const price = paidBadge ? 0 : getDiscountedPrice(item);
   const newPassKey=(activeDiscount==='pass_day'||activeDiscount==='pass_night')?activeDiscount:'';
