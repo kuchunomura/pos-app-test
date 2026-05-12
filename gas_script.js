@@ -155,12 +155,12 @@ function setupCashInputRow(sheet) {
   sheet.getRange(2, 4).setValue('対10万差額').setFontWeight('bold');
   sheet.getRange(2, 5).setFormula('=IF(B2="","",B2-100000)');
   sheet.getRange(2, 5).setNumberFormat('+#,##0;-#,##0;0').setFontColor('#B22222').setFontWeight('bold');
-  // G2: クレ+電子ラベル, H2: 合計金額
+  // G2: クレ+電子ラベル, H2: 合計金額（クレ青＋電子紫の中間・青紫）
   sheet.getRange(2, 7).setValue('クレ+電子').setFontWeight('bold').setHorizontalAlignment('center');
   sheet.getRange(2, 8).setFormula('=SUMIF(J4:J,"クレジットカード",B4:B)+SUMIF(J4:J,"電子決済",B4:B)');
-  sheet.getRange(2, 8).setNumberFormat('#,##0').setFontWeight('bold').setHorizontalAlignment('center');
+  sheet.getRange(2, 8).setNumberFormat('#,##0').setFontWeight('bold').setHorizontalAlignment('center').setBackground('#e8e4ff');
   // K2: 前日繰越ラベル, L2: SUMIF（メモに「前日繰越」を含む行の売上合計）
-  sheet.getRange(2, 11).setValue('前日繰越').setFontWeight('bold').setHorizontalAlignment('center');
+  sheet.getRange(2, 11).setValue('前日繰越').setFontWeight('bold').setHorizontalAlignment('center').setBackground('#fff3cd');
   sheet.getRange(2, 12).setFormula('=SUMIF(N4:N,"*前日繰越*",B4:B)');
   sheet.getRange(2, 12).setNumberFormat('#,##0').setFontWeight('bold').setHorizontalAlignment('center').setBackground('#fff3cd');
 }
@@ -182,7 +182,7 @@ function addRows(rows) {
   sheet.getRange(startRow, 1, rows.length, colCount).setHorizontalAlignment('center');
 
   for (var i = 0; i < rows.length; i++) {
-    applyPaymentColors(sheet, startRow + i, rows[i][9]); // J列(index9): 支払方法
+    applyPaymentColors(sheet, startRow + i, rows[i][9], rows[i][13]); // J列: 支払方法, N列: メモ
   }
 
   applyGroupBorders(sheet, startRow, rows.length, colCount);
@@ -287,12 +287,16 @@ function applyGroupBorders(sheet, startRow, rowCount, colCount) {
   range.setBorder(true, true, true, true, null,  null, '#333333', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 }
 
-function applyPaymentColors(sheet, row, payment) {
-  if (payment === 'クレジットカード') {
-    sheet.getRange(row, 1, 1, 16).setBackground('#f0f8ff');
+function applyPaymentColors(sheet, row, payment, memo) {
+  var bg = '';
+  if (String(memo || '').indexOf('前日繰越') !== -1) {
+    bg = '#fff3cd';
+  } else if (payment === 'クレジットカード') {
+    bg = '#f0f8ff';
   } else if (payment === '電子決済') {
-    sheet.getRange(row, 1, 1, 16).setBackground('#fdf5ff');
+    bg = '#fdf5ff';
   }
+  if (bg) sheet.getRange(row, 1, 1, 16).setBackground(bg);
 }
 
 // ==================== 集計テーブル ====================
