@@ -163,6 +163,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 .payment-done-method{font-size:12px;color:var(--text2);margin-bottom:16px;}
 .payment-done-btns{display:flex;flex-direction:column;gap:7px;}
 .payment-done-btns button{padding:12px;border-radius:10px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+.done-next{padding:20px !important;font-size:17px !important;}
 .done-edit{background:#fff3e0;color:var(--accent2);border:1px solid var(--accent3) !important;}
 .done-next{background:var(--accent);color:#fff;}
 .done-flag{background:#fde8e8;color:var(--red);border:1px solid #f5c0c0 !important;}
@@ -690,6 +691,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
       <button class="done-next" onclick="nextCustomer()">✅ 次のお客様へ</button>
       <button class="done-flag" onclick="flagAndClose()">🔴 印をつけて閉じる</button>
     </div>
+    <div id="done-countdown" style="margin-top:10px;font-size:11px;color:#bbb;"></div>
   </div>
 </div>
 
@@ -722,7 +724,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 247;
+const APP_VERSION = 248;
 const APP_BUILD_DATE = '2026/05/12';
 
 // ===== ストレージ =====
@@ -954,6 +956,8 @@ let selectedAttrs = {age:[],nationality:[]};
 let activeDiscount = ''; // site key or 'pass_day' or 'pass_night' or 'stay_guest'
 let activeMura = false;  // 村民割引トグル（activeDiscountとは独立）
 let nextDayMode = 0; // 翌日計上モード: 0=OFF, 1=翌日, 2=翌々日
+let paymentDoneTimer = null;
+let paymentDoneCountdownInterval = null;
 let carryOverTotal = 0;      // 前日繰越合計（GASから取得）
 let carryOverFetchDate = ''; // 最後にGASから取得した日付（日付またぎ検出用）
 let currentPayMethod = '';
@@ -1928,17 +1932,38 @@ function confirmPayment(){
   holds[activeHoldIdx]=null;
   sv(KEYS.holds,holds);
   document.getElementById('payment-done').classList.add('open');
+  startPaymentDoneTimer();
 }
 
-function nextCustomer(){document.getElementById('payment-done').classList.remove('open');clearCart();}
-function closeDone(){document.getElementById('payment-done').classList.remove('open');}
+function startPaymentDoneTimer(){
+  clearPaymentDoneTimer();
+  var remaining = 180;
+  var cd = document.getElementById('done-countdown');
+  function tick(){
+    if(cd) cd.textContent = remaining + '秒後に自動で次のお客様へ';
+    if(remaining <= 0){ nextCustomer(); return; }
+    remaining--;
+    paymentDoneTimer = setTimeout(tick, 1000);
+  }
+  tick();
+}
+function clearPaymentDoneTimer(){
+  if(paymentDoneTimer){ clearTimeout(paymentDoneTimer); paymentDoneTimer=null; }
+  var cd = document.getElementById('done-countdown');
+  if(cd) cd.textContent='';
+}
+
+function nextCustomer(){clearPaymentDoneTimer();document.getElementById('payment-done').classList.remove('open');clearCart();}
+function closeDone(){clearPaymentDoneTimer();document.getElementById('payment-done').classList.remove('open');}
 function flagAndClose(){
+  clearPaymentDoneTimer();
   if(lastSaleId){const r=sales.find(s=>s.id===lastSaleId);if(r){r.flagged=true;sv(KEYS.sales,sales);}}
   document.getElementById('payment-done').classList.remove('open');
   clearCart();
 }
 
 function editLastSale(){
+  clearPaymentDoneTimer();
   const record=sales.find(s=>s.id===lastSaleId);if(!record)return;
   sales=sales.filter(s=>s.id!==lastSaleId);sv(KEYS.sales,sales);
   cart=[...record.items];selectedAttrs={...record.attrs};activeDiscount=record.discount||'';
