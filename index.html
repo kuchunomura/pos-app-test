@@ -37,7 +37,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 .cat-section{margin-bottom:14px;}
 .cat-section.dragging-cat{opacity:0.4;}
 .cat-section.drag-over-cat{border-top:3px solid var(--accent);}
-.cat-header{display:flex;align-items:center;gap:6px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.cat-header{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--border);}
 .cat-header-title{font-size:12px;font-weight:700;}
 .cat-drag-handle{font-size:14px;color:#bbb;cursor:grab;padding:0 2px;display:none;}
 .edit-mode .cat-drag-handle{display:block;}
@@ -724,7 +724,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 248;
+const APP_VERSION = 249;
 const APP_BUILD_DATE = '2026/05/12';
 
 // ===== ストレージ =====
@@ -1038,34 +1038,37 @@ function getCatTimeInfo(catId){
     cat_stay_tent:  'CI 14:00～16:00 CO 10:00',
     cat_stay_hm:    'CI 14:00～16:00 CO 10:00',
   };
-  var base = m[catId]||'';
-  // 空中ウォーク・ツリーハウス昼のカートアイテムがあれば終了時刻を追加表示
-  if(catId==='cat_walk' || catId==='cat_tree_day'){
-    var sessionItems = cart.filter(function(c){ return c.cat===catId && !c.paidLabel; });
-    if(sessionItems.length > 0){
-      var now = new Date();
-      var closeHour = catId==='cat_walk' ? 17 : 16;
-      var parts = sessionItems.map(function(c){
-        if(/1day/i.test(c.name) || /1DAY/.test(c.name)){
-          return '1DAY→'+closeHour+':00';
-        }
-        var m55 = c.name.match(/(\d+)分/);
-        if(!m55) return null;
-        var labelMins = parseInt(m55[1]);
-        // 空中ウォークのみ: 55分=実60分、115分=実120分。ツリーハウスはきっちり
-        var actualMins = catId==='cat_walk' ? (labelMins===55 ? 60 : labelMins===115 ? 120 : labelMins) : labelMins;
-        var end = new Date(now.getTime() + actualMins*60000);
-        var hh = end.getHours();
-        var mm = ('0'+end.getMinutes()).slice(-2);
-        return labelMins+'分→'+hh+':'+mm;
-      }).filter(function(x){return x;});
-      if(parts.length > 0){
-        var endStr = parts.join(' / ');
-        base += '<span style="color:#8B3A3A;font-weight:700;font-size:13px;margin-left:2em;">'+endStr+'</span>';
+  return m[catId]||'';
+}
+
+// カテゴリーの時間スロット表示HTML（常時表示。カート一致時にハイライト）
+function getCatTimeSlots(catId){
+  if(catId!=='cat_walk' && catId!=='cat_tree_day') return '';
+  var closeHour = catId==='cat_walk' ? 17 : 16;
+  var slots = [{min:55,label:'55分'},{min:115,label:'115分'},{min:0,label:'1DAY'}];
+  var now = new Date();
+  var sessionItems = cart.filter(function(c){ return c.cat===catId && !c.paidLabel; });
+  var parts = slots.map(function(slot){
+    var inCart = sessionItems.some(function(c){
+      if(slot.min===0) return /1day/i.test(c.name)||/1DAY/.test(c.name);
+      var m55=c.name.match(/(\d+)分/);
+      return m55 && parseInt(m55[1])===slot.min;
+    });
+    var endStr = '';
+    if(inCart){
+      if(slot.min===0){
+        endStr = '→'+closeHour+':00';
+      } else {
+        var actualMins = catId==='cat_walk' ? (slot.min===55?60:slot.min===115?120:slot.min) : slot.min;
+        var end = new Date(now.getTime()+actualMins*60000);
+        endStr = '→'+end.getHours()+':'+('0'+end.getMinutes()).slice(-2);
       }
     }
-  }
-  return base;
+    var color = inCart ? '#8B3A3A' : '#888';
+    var weight = inCart ? '700' : '500';
+    return '<span style="color:'+color+';font-weight:'+weight+';font-size:12px;white-space:nowrap;">'+slot.label+endStr+'</span>';
+  });
+  return '<div style="width:100%;display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;">'+parts.join('')+'</div>';
 }
 
 
@@ -1164,8 +1167,10 @@ function renderPOS(){
       const header=document.createElement('div');
       header.className='cat-header';
       const catTimeInfo=getCatTimeInfo(cat.id);
+      const catTimeSlots=getCatTimeSlots(cat.id);
       header.innerHTML='<span class="cat-drag-handle">⠿⠿</span><span class="cat-header-title" style="color:'+cat.text+'">'+cat.name+'</span>'+
-        (catTimeInfo?'<span style="font-size:13px;color:#555;margin-left:3em;font-weight:500;">'+catTimeInfo+'</span>':'');
+        (catTimeInfo?'<span style="font-size:13px;color:#555;margin-left:3em;font-weight:500;">'+catTimeInfo+'</span>':'')+
+        catTimeSlots;
       header.style.borderBottomColor=cat.border;
       const grid=document.createElement('div');grid.className='cat-items';
       catItems.forEach(item=>{
@@ -1184,7 +1189,7 @@ function renderPOS(){
         const grp=getCatGroup(cat.id);
         const wrap=document.createElement('div');
         wrap.style.cssText='display:flex;gap:6px;';
-        section.style.flex='1';
+        section.style.flex=(grp[0]==='cat_tree_day')?'2':'1';
         wrap.appendChild(section);
         grp.slice(1).forEach(function(fId){
           const fCat=cats.find(x=>x.id===fId); if(!fCat) return;
@@ -1194,7 +1199,8 @@ function renderPOS(){
           fSec.className='cat-section';fSec.dataset.catId=fId;fSec.style.flex='1';
           const fHdr=document.createElement('div');fHdr.className='cat-header';
           const fTI=getCatTimeInfo(fId);
-          fHdr.innerHTML='<span class="cat-header-title" style="color:'+fCat.text+'">'+fCat.name+'</span>'+(fTI?'<span style="font-size:11px;color:#555;margin-left:3em;font-weight:500;">'+fTI+'</span>':'');
+          const fTS=getCatTimeSlots(fId);
+          fHdr.innerHTML='<span class="cat-header-title" style="color:'+fCat.text+'">'+fCat.name+'</span>'+(fTI?'<span style="font-size:11px;color:#555;margin-left:3em;font-weight:500;">'+fTI+'</span>':'')+fTS;
           fHdr.style.borderBottomColor=fCat.border;
           const fGrid=document.createElement('div');fGrid.className='cat-items';
           fItems.forEach(function(item){fGrid.appendChild(makeItemBtn(item,fCat,fGrid));});
@@ -1218,7 +1224,8 @@ function renderPOS(){
       const header=document.createElement('div');
       header.className='cat-header';
       const cti=getCatTimeInfo(cat.id);
-      header.innerHTML='<span class="cat-header-title" style="color:'+cat.text+'">'+cat.name+'</span>'+(cti?'<span style="font-size:11px;color:#555;margin-left:3em;font-weight:500;">'+cti+'</span>':'');
+      const cts=getCatTimeSlots(cat.id);
+      header.innerHTML='<span class="cat-header-title" style="color:'+cat.text+'">'+cat.name+'</span>'+(cti?'<span style="font-size:11px;color:#555;margin-left:3em;font-weight:500;">'+cti+'</span>':'')+cts;
       header.style.borderBottomColor=cat.border;
       const grid=document.createElement('div');grid.className='cat-items';
       catItems.forEach(item=>{ grid.appendChild(makeItemBtn(item,cat,grid)); });
@@ -1227,7 +1234,7 @@ function renderPOS(){
         const grp=getCatGroup(cat.id);
         const wrap=document.createElement('div');
         wrap.style.cssText='display:flex;gap:6px;';
-        section.style.flex='1';
+        section.style.flex=(grp[0]==='cat_tree_day')?'2':'1';
         wrap.appendChild(section);
         grp.slice(1).forEach(function(fId){
           const fCat=cats.find(x=>x.id===fId); if(!fCat) return;
@@ -1236,7 +1243,8 @@ function renderPOS(){
           const fSec=document.createElement('div');fSec.className='cat-section';fSec.style.flex='1';
           const fHdr=document.createElement('div');fHdr.className='cat-header';
           const fTI=getCatTimeInfo(fId);
-          fHdr.innerHTML='<span class="cat-header-title" style="color:'+fCat.text+'">'+fCat.name+'</span>'+(fTI?'<span style="font-size:11px;color:#555;margin-left:3em;font-weight:500;">'+fTI+'</span>':'');
+          const fTS=getCatTimeSlots(fId);
+          fHdr.innerHTML='<span class="cat-header-title" style="color:'+fCat.text+'">'+fCat.name+'</span>'+(fTI?'<span style="font-size:11px;color:#555;margin-left:3em;font-weight:500;">'+fTI+'</span>':'')+fTS;
           fHdr.style.borderBottomColor=fCat.border;
           const fGrid=document.createElement('div');fGrid.className='cat-items';
           fItems.forEach(function(item){fGrid.appendChild(makeItemBtn(item,fCat,fGrid));});
