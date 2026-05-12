@@ -631,7 +631,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
     </div>
     <div class="modal-btns">
       <button onclick="closePaymentModal()">キャンセル</button>
-      <button class="confirm" onclick="confirmPayment()" style="padding:16px 28px;font-size:15px;">決済完了</button>
+      <button id="payment-confirm-btn" class="confirm" onclick="confirmPayment()" style="padding:16px 28px;font-size:15px;">決済完了</button>
     </div>
   </div>
 </div>
@@ -722,7 +722,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 246;
+const APP_VERSION = 247;
 const APP_BUILD_DATE = '2026/05/12';
 
 // ===== ストレージ =====
@@ -1847,7 +1847,8 @@ function openPayment(method){
   document.getElementById('payment-modal-amount').textContent='¥'+total.toLocaleString();
   const cs=document.getElementById('cash-change-section');
   cs.style.display=method==='cash'?'':'none';
-  if(method==='cash'){document.getElementById('cash-received').value='';document.getElementById('change-amount').textContent='¥0';}
+  if(method==='cash'){document.getElementById('cash-received').value='';document.getElementById('change-amount').textContent='¥0';setConfirmBtnReady(false);}
+  else{setConfirmBtnReady(true);}
   document.getElementById('payment-modal').classList.add('open');
 }
 
@@ -1868,6 +1869,16 @@ function calcChange(){
   const change=received-total;
   document.getElementById('change-amount').textContent=change>=0?'¥'+change.toLocaleString():'不足';
   document.getElementById('change-amount').style.color=change>=0?'var(--green)':'var(--red)';
+  setConfirmBtnReady(received>=total);
+}
+function setConfirmBtnReady(ready){
+  var btn=document.getElementById('payment-confirm-btn');
+  if(!btn) return;
+  if(ready){
+    btn.style.background='var(--accent)';btn.style.color='#fff';btn.style.borderColor='var(--accent)';btn.style.opacity='1';
+  } else {
+    btn.style.background='#fff';btn.style.color='#bbb';btn.style.borderColor='#ddd';btn.style.opacity='1';
+  }
 }
 
 function closePaymentModal(){document.getElementById('payment-modal').classList.remove('open');}
