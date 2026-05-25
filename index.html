@@ -326,6 +326,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
   <div class="sales-header">
     <h2>📊 売上管理</h2>
     <button class="btn-sm2" onclick="exportCSV()">📥 CSV</button>
+    <button class="btn-sm2" onclick="openMonthlyModal()" style="background:#4a7c2f;color:#fff;border-color:#4a7c2f;">📅 月別集計</button>
     <div style="position:relative;display:inline-block;">
       <button class="btn-sm2 primary" onclick="toggleSyncMenu(event)">📊 同期 ▾</button>
       <div id="sync-menu" style="display:none;position:absolute;right:0;top:32px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);z-index:300;min-width:110px;padding:4px 0;">
@@ -596,6 +597,30 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
       <button onclick="saveSaleChanges()" style="background:#e8f4fd;color:var(--blue);border:1px solid #a0c8e8;">💾 変更して保存</button>
       <button id="sale-detail-flag-btn" onclick="toggleSaleFlag()" style="background:#fde8e8;color:var(--red);border:1px solid #f5c0c0;">🔴 印</button>
       <button class="confirm" style="background:var(--red);border-color:var(--red);" onclick="deleteSaleFromDetail()">削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- 月別集計モーダル -->
+<div class="modal-overlay" id="monthly-modal" style="display:none;align-items:center;justify-content:center;">
+  <div class="modal" style="max-width:320px;padding:20px;">
+    <h3 style="margin:0 0 16px;">📅 月別集計</h3>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <div style="flex:1;"><label style="font-size:12px;font-weight:600;">年</label>
+        <select id="monthly-year" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;"></select>
+      </div>
+      <div style="flex:1;"><label style="font-size:12px;font-weight:600;">月</label>
+        <select id="monthly-month" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;">
+          <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+          <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+          <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+          <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-primary2" style="flex:1;" onclick="doMonthlySummary()">集計作成</button>
+      <button class="btn-sm2" style="flex:1;" onclick="closeMonthlyModal()">キャンセル</button>
     </div>
   </div>
 </div>
@@ -2690,6 +2715,36 @@ function saleToRows(sale){
       isFirst?sale.device_name||sale.device||'':'',   // P: 端末名
     ];
   });
+}
+
+// 月別集計
+function openMonthlyModal(){
+  var now=new Date();
+  var sel=document.getElementById('monthly-year');
+  sel.innerHTML='';
+  for(var y=now.getFullYear();y>=now.getFullYear()-2;y--){
+    var o=document.createElement('option');o.value=y;o.textContent=y+'年';sel.appendChild(o);
+  }
+  var m=document.getElementById('monthly-month');
+  m.value=now.getMonth()===0?12:now.getMonth();
+  document.getElementById('monthly-modal').style.display='flex';
+}
+function closeMonthlyModal(){
+  document.getElementById('monthly-modal').style.display='none';
+}
+function doMonthlySummary(){
+  var year=parseInt(document.getElementById('monthly-year').value);
+  var month=parseInt(document.getElementById('monthly-month').value);
+  closeMonthlyModal();
+  showToast('⏳ 集計中...');
+  var url=ld(KEYS.gas)||DEFAULT_GAS_URL;
+  fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({type:'monthly_summary',year:year,month:month})})
+  .then(function(r){return r.json();})
+  .then(function(j){
+    if(j.status==='ok') showToast('✅ 集計完了: '+(j.data&&j.data.sheet?j.data.sheet:''));
+    else showToast('❌ エラー: '+(j.message||''),'#c00');
+  }).catch(function(){showToast('❌ 通信エラー','#c00');});
 }
 
 // 同期メニュー表示

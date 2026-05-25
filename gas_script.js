@@ -21,7 +21,11 @@ function doGet(e) {
     var d = (e && e.parameter && e.parameter.d) ? JSON.parse(decodeURIComponent(e.parameter.d)) : null;
     if (!d) return ok();
     if (d.type === 'test') return ok();
-    handleRequest(d);
+    var result = handleRequest(d);
+    if (result) {
+      return ContentService.createTextOutput(JSON.stringify({status:'ok', data:result}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     return ok();
   } catch(err) {
     return ContentService.createTextOutput(JSON.stringify({status:'error', message:err.message}))
@@ -57,7 +61,11 @@ function doPost(e) {
     var d = (e && e.postData) ? JSON.parse(e.postData.contents) : null;
     if (!d) return ok();
     if (d.type === 'test') return ok();
-    handleRequest(d);
+    var result = handleRequest(d);
+    if (result) {
+      return ContentService.createTextOutput(JSON.stringify({status:'ok', data:result}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     return ok();
   } catch(err) {
     return ContentService.createTextOutput(JSON.stringify({status:'error', message:err.message}))
@@ -72,10 +80,12 @@ function ok() {
 
 function handleRequest(data) {
   var type = data.type;
-  if      (type === 'add_rows')     addRows(data.rows);
-  else if (type === 'delete_rows')  deleteRows(data.sale_id);
-  else if (type === 'replace_rows') replaceRows(data.sale_id, data.rows);
-  else if (type === 'clear_sheets') clearSheets();
+  if      (type === 'add_rows')        addRows(data.rows);
+  else if (type === 'delete_rows')     deleteRows(data.sale_id);
+  else if (type === 'replace_rows')    replaceRows(data.sale_id, data.rows);
+  else if (type === 'clear_sheets')    clearSheets();
+  else if (type === 'monthly_summary') return { sheet: createMonthlySummary(data.year, data.month) };
+  return null;
 }
 
 // ==================== シート名 ====================
@@ -414,4 +424,303 @@ function updateSummary(sheet) {
 
   SpreadsheetApp.flush();
   setSummaryColumnWidths(sheet);
+}
+
+// ==================== 月別集計 ====================
+
+function runMonthlySummary() {
+  var now = new Date();
+  var month = now.getMonth();
+  var year  = now.getFullYear();
+  if (month === 0) { month = 12; year -= 1; }
+  createMonthlySummary(year, month);
+}
+
+function debugSheetNames() {
+  var ss = SpreadsheetApp.openById(SS_ID);
+  var sheets = ss.getSheets();
+  var names = sheets.map(function(s){ return s.getName(); });
+  Logger.log(names.join('\n'));
+}
+
+function setupMonthlyTrigger() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var t = 0; t < triggers.length; t++) {
+    if (triggers[t].getHandlerFunction() === 'runMonthlySummary') {
+      ScriptApp.deleteTrigger(triggers[t]);
+    }
+  }
+  ScriptApp.newTrigger('runMonthlySummary')
+    .timeBased()
+    .onMonthDay(1)
+    .atHour(6)
+    .create();
+}
+
+function createMonthlySummary(year, month) {
+  var ss = SpreadsheetApp.openById(SS_ID);
+  var sheets = ss.getSheets();
+
+  var monthSheets = [];
+  for (var s = 0; s < sheets.length; s++) {
+    var name = sheets[s].getName();
+    var match = name.match(/^(?:\d{4}\/)?(\d+)\/(\d+)[^0-9\/]*売上$/);
+    if (match && parseInt(match[1]) === month) {
+      monthSheets.push({ sheet: sheets[s], day: parseInt(match[2]) });
+    }
+  }
+  monthSheets.sort(function(a, b) { return a.day - b.day; });
+
+  var dailyMap = {};
+  var itemMap  = {};
+  var payMap   = {};
+  var discMap  = {};
+  var ageMap   = {};
+  var natMap   = {};
+  var txSeen   = {};
+  var mura     = {count:0, people:0, total:0};
+  var pass     = {count:0, people:0, total:0};
+  var grandTotal = 0, grandCount = 0, grandPeople = 0;
+
+  for (var si = 0; si < monthSheets.length; si++) {
+    var sheet   = monthSheets[si].sheet;
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 4) continue;
+    var data    = sheet.getRange(4, 1, lastRow - 3, 16).getValues();
+    var dateStr = month + '/' + monthSheets[si].day;
+    if (!dailyMap[dateStr]) dailyMap[dateStr] = {total:0,count:0,people:0,cash:0,card:0,elec:0};
+
+    for (var i = 0; i < data.length; i++) {
+      var r        = data[i];
+      var txId     = String(r[14]);
+      var amount   = Number(r[1]);
+      var itemName = String(r[2]);
+      var cat      = String(r[3]);
+      var qty      = Number(r[4]);
+      var unitPrice= Number(r[5]);
+      var people   = Number(r[7]);
+      var disc     = String(r[8]);
+      var payment  = String(r[9]);
+      var ageStr   = String(r[10]);
+      var natStr   = String(r[11]);
+
+      if (itemName && itemName !== '') {
+        var mKey = itemName + '\t' + cat;
+        if (!itemMap[mKey]) itemMap[mKey] = {name:itemName, cat:cat, qty:0, total:0};
+        itemMap[mKey].qty   += qty;
+        itemMap[mKey].total += unitPrice * qty;
+      }
+
+      if (!txSeen[txId]) {
+        txSeen[txId] = true;
+
+        dailyMap[dateStr].total  += amount;
+        dailyMap[dateStr].count  += 1;
+        dailyMap[dateStr].people += people;
+        if      (payment === '現金')           dailyMap[dateStr].cash += amount;
+        else if (payment === 'クレジットカード') dailyMap[dateStr].card += amount;
+        else if (payment === '電子決済')        dailyMap[dateStr].elec += amount;
+
+        grandTotal  += amount;
+        grandCount  += 1;
+        grandPeople += people;
+
+        if (!payMap[payment]) payMap[payment] = {total:0, count:0};
+        payMap[payment].total += amount;
+        payMap[payment].count += 1;
+
+        var dKey = (disc && disc !== '' && disc !== 'false') ? disc : 'なし';
+        if (!discMap[dKey]) discMap[dKey] = {count:0, total:0};
+        discMap[dKey].count += 1;
+        discMap[dKey].total += amount;
+
+        // 村民
+        if (disc === 'mura') {
+          mura.count++;
+          mura.people += people;
+          mura.total  += amount;
+        }
+        // 年間パス
+        if (disc === 'pass_day' || disc === 'pass_night') {
+          pass.count++;
+          pass.people += people;
+          pass.total  += amount;
+        }
+
+        if (ageStr && ageStr !== '') {
+          var ages = ageStr.split('・');
+          for (var a = 0; a < ages.length; a++) {
+            var ag = ages[a].trim();
+            if (!ag) continue;
+            if (!ageMap[ag]) ageMap[ag] = {groups:0, people:0};
+            ageMap[ag].groups++;
+            ageMap[ag].people += people;
+          }
+        }
+
+        if (natStr && natStr !== '') {
+          var nats = natStr.split('・');
+          for (var n = 0; n < nats.length; n++) {
+            var nat = nats[n].trim();
+            if (!nat) continue;
+            if (!natMap[nat]) natMap[nat] = {groups:0, people:0};
+            natMap[nat].groups++;
+            natMap[nat].people += people;
+          }
+        }
+      }
+    }
+  }
+
+  var sheetName = year + '年' + month + '月 月別集計';
+  var out = ss.getSheetByName(sheetName);
+  if (out) { out.clear(); } else { out = ss.insertSheet(sheetName, 0); }
+
+  var row = 1;
+  var BG_HEAD  = '#2d5016';
+  var BG_SEC   = '#4a7c2f';
+  var BG_TOTAL = '#e8f0e0';
+  var BG_EVEN  = '#fafafa';
+
+  out.getRange(row, 1, 1, 8).merge()
+    .setValue(year + '年' + month + '月 月別集計')
+    .setFontSize(15).setFontWeight('bold')
+    .setBackground(BG_HEAD).setFontColor('#fff').setHorizontalAlignment('center');
+  row++;
+
+  var avg = grandPeople > 0 ? Math.round(grandTotal / grandPeople) : 0;
+  out.getRange(row, 1, 1, 8).setValues([['総売上', grandTotal, '件数', grandCount, '人数', grandPeople, '客単価（人）', avg]])
+    .setBackground('#f0f4e8').setFontWeight('bold').setHorizontalAlignment('center');
+  out.getRange(row, 2).setNumberFormat('#,##0');
+  out.getRange(row, 8).setNumberFormat('#,##0');
+  row += 2;
+
+  function secHead(label, cols) {
+    out.getRange(row, 1, 1, cols).merge()
+      .setValue(label).setFontWeight('bold')
+      .setBackground(BG_SEC).setFontColor('#fff');
+    row++;
+  }
+  function colHead(headers) {
+    out.getRange(row, 1, 1, headers.length).setValues([headers])
+      .setFontWeight('bold').setBackground('#f5f5f5').setHorizontalAlignment('center');
+    row++;
+  }
+
+  // 日別売上
+  secHead('【日別売上】', 7);
+  colHead(['日付','売上合計','件数','人数','現金','カード','電子決済']);
+  var days = Object.keys(dailyMap).sort(function(a,b){ return parseInt(a.split('/')[1])-parseInt(b.split('/')[1]); });
+  var dt=[0,0,0,0,0,0];
+  for (var d = 0; d < days.length; d++) {
+    var dd = dailyMap[days[d]];
+    out.getRange(row,1,1,7).setValues([[days[d],dd.total,dd.count,dd.people,dd.cash,dd.card,dd.elec]]);
+    out.getRange(row,2).setNumberFormat('#,##0');
+    out.getRange(row,5,1,3).setNumberFormat('#,##0');
+    if (d%2===0) out.getRange(row,1,1,7).setBackground(BG_EVEN);
+    dt[0]+=dd.total;dt[1]+=dd.count;dt[2]+=dd.people;dt[3]+=dd.cash;dt[4]+=dd.card;dt[5]+=dd.elec;
+    row++;
+  }
+  out.getRange(row,1,1,7).setValues([['合計',dt[0],dt[1],dt[2],dt[3],dt[4],dt[5]]])
+    .setFontWeight('bold').setBackground(BG_TOTAL).setHorizontalAlignment('center');
+  out.getRange(row,2).setNumberFormat('#,##0');
+  out.getRange(row,5,1,3).setNumberFormat('#,##0');
+  row += 2;
+
+  // 支払方法別
+  secHead('【支払方法別】', 3);
+  colHead(['支払方法','売上合計','件数']);
+  var pKeys = Object.keys(payMap);
+  for (var p = 0; p < pKeys.length; p++) {
+    var pv = payMap[pKeys[p]];
+    out.getRange(row,1,1,3).setValues([[pKeys[p],pv.total,pv.count]]);
+    out.getRange(row,2).setNumberFormat('#,##0');
+    if (p%2===0) out.getRange(row,1,1,3).setBackground(BG_EVEN);
+    row++;
+  }
+  row++;
+
+  // 商品別売上
+  secHead('【商品別売上（金額順）】', 4);
+  colHead(['商品名','カテゴリ','数量','売上合計']);
+  var iKeys = Object.keys(itemMap);
+  iKeys.sort(function(a,b){ return itemMap[b].total - itemMap[a].total; });
+  for (var ii = 0; ii < iKeys.length; ii++) {
+    var iv = itemMap[iKeys[ii]];
+    out.getRange(row,1,1,4).setValues([[iv.name,iv.cat,iv.qty,iv.total]]);
+    out.getRange(row,4).setNumberFormat('#,##0');
+    if (ii%2===0) out.getRange(row,1,1,4).setBackground(BG_EVEN);
+    row++;
+  }
+  row++;
+
+  // 割引・予約サイト別
+  secHead('【割引・予約サイト別】', 3);
+  colHead(['割引/予約サイト','件数','売上合計']);
+  var dkKeys = Object.keys(discMap);
+  for (var dk = 0; dk < dkKeys.length; dk++) {
+    var dv = discMap[dkKeys[dk]];
+    out.getRange(row,1,1,3).setValues([[dkKeys[dk],dv.count,dv.total]]);
+    out.getRange(row,3).setNumberFormat('#,##0');
+    if (dk%2===0) out.getRange(row,1,1,3).setBackground(BG_EVEN);
+    row++;
+  }
+  row++;
+
+  // 村民
+  secHead('【村民割引】', 3);
+  colHead(['','件数','人数']);
+  out.getRange(row,1,1,3).setValues([['売上合計', mura.count, mura.people]]);
+  out.getRange(row,1).setValue('件数 / 人数');
+  out.getRange(row,1,1,3).setHorizontalAlignment('center');
+  row++;
+  out.getRange(row,1,1,2).setValues([['売上合計', mura.total]]);
+  out.getRange(row,2).setNumberFormat('#,##0');
+  out.getRange(row,1,1,2).setHorizontalAlignment('center');
+  row += 2;
+
+  // 年間パス
+  secHead('【年間パス】', 3);
+  colHead(['','件数','人数']);
+  out.getRange(row,1,1,3).setValues([['件数 / 人数', pass.count, pass.people]]).setHorizontalAlignment('center');
+  row++;
+  out.getRange(row,1,1,2).setValues([['売上合計', pass.total]]);
+  out.getRange(row,2).setNumberFormat('#,##0');
+  out.getRange(row,1,1,2).setHorizontalAlignment('center');
+  row += 2;
+
+  // 年齢層別
+  secHead('【年齢層別】', 3);
+  colHead(['年齢層','件数（組）','人数']);
+  var aKeys = Object.keys(ageMap);
+  for (var ak = 0; ak < aKeys.length; ak++) {
+    var av = ageMap[aKeys[ak]];
+    out.getRange(row,1,1,3).setValues([[aKeys[ak],av.groups,av.people]]);
+    if (ak%2===0) out.getRange(row,1,1,3).setBackground(BG_EVEN);
+    row++;
+  }
+  row++;
+
+  // 国籍別
+  secHead('【国籍別】', 3);
+  colHead(['国籍','件数（組）','人数']);
+  var nkKeys = Object.keys(natMap);
+  for (var nk = 0; nk < nkKeys.length; nk++) {
+    var nv = natMap[nkKeys[nk]];
+    out.getRange(row,1,1,3).setValues([[nkKeys[nk],nv.groups,nv.people]]);
+    if (nk%2===0) out.getRange(row,1,1,3).setBackground(BG_EVEN);
+    row++;
+  }
+
+  out.setColumnWidth(1, 130);
+  out.setColumnWidth(2, 110);
+  out.setColumnWidth(3,  80);
+  out.setColumnWidth(4,  80);
+  out.setColumnWidth(5, 100);
+  out.setColumnWidth(6, 100);
+  out.setColumnWidth(7, 100);
+  out.setColumnWidth(8, 110);
+
+  SpreadsheetApp.flush();
+  return sheetName;
 }
