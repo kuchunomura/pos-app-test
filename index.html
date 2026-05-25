@@ -2738,8 +2738,8 @@ function doMonthlySummary(){
   closeMonthlyModal();
   showToast('⏳ 集計中...');
   var url=ld(KEYS.gas)||DEFAULT_GAS_URL;
-  fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({type:'monthly_summary',year:year,month:month})})
+  var qs='?d='+encodeURIComponent(JSON.stringify({type:'monthly_summary',year:year,month:month}));
+  fetch(url+qs,{method:'GET',redirect:'follow'})
   .then(function(r){return r.json();})
   .then(function(j){
     if(j.status==='ok') showToast('✅ 集計完了: '+(j.data&&j.data.sheet?j.data.sheet:''));
