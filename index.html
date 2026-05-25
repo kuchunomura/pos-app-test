@@ -327,9 +327,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
     <h2>📊 売上管理</h2>
     <button class="btn-sm2" onclick="exportCSV()">📥 CSV</button>
     <button class="btn-sm2" onclick="openMonthlyModal()" style="background:#4a7c2f;color:#fff;border-color:#4a7c2f;">📅 月別集計</button>
-    <button class="btn-sm2" onclick="syncDevices()" style="background:#0288d1;color:#fff;border-color:#0288d1;">🔄 デバイス間同期</button>
     <div style="position:relative;display:inline-block;">
-      <button class="btn-sm2 primary" onclick="toggleSyncMenu(event)">📊 同期 ▾</button>
+      <button class="btn-sm2 primary" onclick="toggleSyncMenu(event)">📊 同期+取得 ▾</button>
       <div id="sync-menu" style="display:none;position:absolute;right:0;top:32px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);z-index:300;min-width:110px;padding:4px 0;">
         <button onclick="doSync('today')" style="display:block;width:100%;padding:8px 14px;border:none;background:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left;">今日分</button>
         <button onclick="doSync('yesterday')" style="display:block;width:100%;padding:8px 14px;border:none;background:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left;">昨日分</button>
@@ -2813,16 +2812,16 @@ async function gasPost(url, data){
   await fetch(url,{method:'POST',mode:'no-cors',body:JSON.stringify(data)});
 }
 
-// 実際の同期処理
+// 実際の同期処理（push → pull）
 async function syncSalesData(data, label){
   const url=(ld(KEYS.gas)||DEFAULT_GAS_URL)||'';
   if(!url){showToast('⚠ GAS URLを設定してください','#c00');switchTab('settings-pos');return;}
   if(!data.length){showToast('⚠ 対象データがありません','#c00');return;}
-  showToast(label+'を同期中...',null,15000);
+  showToast(label+'を同期中...', null, 30000);
   try{
+    // Step1: push（選択分をGASに送信）
     var isAll=label==='全件';
     if(isAll){
-      // 全件は1回のPOSTで一括送信（merge: IDで削除→追加、他デバイスのデータを消さない）
       var allRows=data.map(function(s){return saleToRows(s);});
       await gasPost(url,{type:'bulk_merge',sales:allRows});
     } else {
@@ -2830,8 +2829,20 @@ async function syncSalesData(data, label){
         await gasGet(url,{type:'add_rows',rows:saleToRows(data[i])});
       }
     }
-    showToast('✓ '+label+'を同期しました（'+data.length+'件）',null,4000);
-  }catch(e){showToast('⚠ 通信エラー: '+e.message,'#c00');}
+    // Step2: pull（GAS全件取得 → マージ）
+    var qs='?d='+encodeURIComponent(JSON.stringify({type:'get_all_sales'}));
+    var res=await fetch(url+qs,{method:'GET',redirect:'follow'});
+    var json=await res.json();
+    if(json.status==='ok' && json.data && json.data.rows){
+      var remoteSales=rowsToSales(json.data.rows);
+      var added=mergeSalesFromGas(remoteSales);
+      renderSales();
+      showToast('✓ '+label+'同期完了（'+added+'件取得）',null,4000);
+    } else {
+      var errMsg=json.message||json.error||JSON.stringify(json).substring(0,200);
+      alert('同期エラー（pull）:\n'+errMsg);
+    }
+  }catch(e){ alert('同期エラー:\n'+e.message); }
 }
 // 旧関数名を維持（後方互換）
 async function syncSales(){ doSync('all'); }
@@ -2902,32 +2913,6 @@ function mergeSalesFromGas(remoteSales) {
   return added;
 }
 
-// デバイス間同期: このデバイスをpush → GAS全件pull → マージ
-async function syncDevices() {
-  var url=ld(KEYS.gas)||DEFAULT_GAS_URL;
-  if (!url) { showToast('⚠ GAS URLが設定されていません','#c00'); return; }
-  showToast('🔄 デバイス間同期中...', null, 20000);
-  try {
-    // Step1: このデバイスの全データをpush（他デバイスのデータは消さない）
-    var allRows=sales.map(function(s){ return saleToRows(s); });
-    await gasPost(url, {type:'bulk_merge', sales:allRows});
-    // Step2: GASの全売上をpull
-    var qs='?d='+encodeURIComponent(JSON.stringify({type:'get_all_sales'}));
-    var res=await fetch(url+qs, {method:'GET', redirect:'follow'});
-    var json=await res.json();
-    if (json.status==='ok' && json.data && json.data.rows) {
-      var remoteSales=rowsToSales(json.data.rows);
-      var added=mergeSalesFromGas(remoteSales);
-      renderSales();
-      showToast('✓ デバイス間同期完了（'+added+'件追加）', null, 4000);
-    } else {
-      var errMsg=json.message||json.error||JSON.stringify(json).substring(0,200);
-      alert('デバイス間同期エラー:\n'+errMsg);
-    }
-  } catch(e) {
-    alert('デバイス間同期 通信エラー:\n'+e.message);
-  }
-}
 
 // 決済ごとに自動送信（新規）
 async function autoSyncSale(sale){
