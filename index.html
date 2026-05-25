@@ -2921,7 +2921,8 @@ async function syncDevices() {
       renderSales();
       showToast('✓ デバイス間同期完了（'+added+'件追加）', null, 4000);
     } else {
-      showToast('⚠ データ取得エラー','#c00');
+      var errMsg=json.message||json.error||JSON.stringify(json).substring(0,80);
+      showToast('⚠ GASエラー: '+errMsg,'#c00',8000);
     }
   } catch(e) {
     showToast('⚠ 通信エラー: '+e.message,'#c00');
