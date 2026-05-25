@@ -90,6 +90,18 @@ function handleRequest(data) {
     var sales = data.sales || [];
     for (var i = 0; i < sales.length; i++) { if (sales[i] && sales[i].length) addRows(sales[i]); }
   }
+  else if (type === 'bulk_merge') {
+    var ss = SpreadsheetApp.openById(SS_ID);
+    var sheets = ss.getSheets();
+    var bSales = data.sales || [];
+    for (var i = 0; i < bSales.length; i++) {
+      var bRows = bSales[i];
+      if (!bRows || !bRows.length) continue;
+      var bId = String(bRows[0][14]);
+      if (bId) { for (var j = 0; j < sheets.length; j++) deleteRowsFromSheet(sheets[j], bId); }
+    }
+    for (var i = 0; i < bSales.length; i++) { if (bSales[i] && bSales[i].length) addRows(bSales[i]); }
+  }
   return null;
 }
 
