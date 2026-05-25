@@ -2833,7 +2833,7 @@ async function syncSalesData(data, label){
     var qs='?d='+encodeURIComponent(JSON.stringify({type:'get_all_sales'}));
     var res=await fetch(url+qs,{method:'GET',redirect:'follow'});
     var json=await res.json();
-    if(json.status==='ok' && json.data && json.data.rows){
+    if(json.status==='ok' && json.data && Array.isArray(json.data.rows)){
       var remoteSales=rowsToSales(json.data.rows);
       var added=mergeSalesFromGas(remoteSales);
       renderSales();
