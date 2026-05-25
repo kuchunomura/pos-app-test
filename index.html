@@ -327,6 +327,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
     <h2>📊 売上管理</h2>
     <button class="btn-sm2" onclick="exportCSV()">📥 CSV</button>
     <button class="btn-sm2" onclick="openMonthlyModal()" style="background:#4a7c2f;color:#fff;border-color:#4a7c2f;">📅 月別集計</button>
+    <button class="btn-sm2" onclick="syncDevices()" style="background:#0288d1;color:#fff;border-color:#0288d1;">🔄 デバイス間同期</button>
     <div style="position:relative;display:inline-block;">
       <button class="btn-sm2 primary" onclick="toggleSyncMenu(event)">📊 同期 ▾</button>
       <div id="sync-menu" style="display:none;position:absolute;right:0;top:32px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);z-index:300;min-width:110px;padding:4px 0;">
@@ -2472,7 +2473,7 @@ function renderSales(){
     const attrStr=attrParts.join(' ');
     tr.innerHTML=
       '<td style="text-align:center;font-size:14px;cursor:pointer;" onclick="event.stopPropagation();quickToggleFlag(\''+r.id+'\',this)">'+(r.flagged?'🔴':'⚪')+'</td>'+
-      '<td style="white-space:nowrap;font-size:10px">'+(r.nextDay?'<span style="color:#7a5500;font-weight:700;">🌙</span> ':'')+dtToShort(r.datetime)+'</td>'+
+      '<td style="white-space:nowrap;font-size:10px">'+(r.nextDay?'<span style="color:#7a5500;font-weight:700;">🌙</span> ':'')+dtToShort(r.datetime)+(r.device_name?'<div style="font-size:9px;color:var(--text2);margin-top:1px;">📱'+r.device_name+'</div>':'')+'</td>'+
       '<td style="font-size:10px;min-width:160px;max-width:220px;">'+
         '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+itemStr+'</div>'+
         (attrStr?'<div style="font-size:9px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+attrStr+'</div>':'')+
@@ -2507,6 +2508,7 @@ function openSaleDetail(id){
       '<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:var(--text2);">支払方法</span><span style="font-weight:600;">'+methodLabel+'</span></div>'+
       '<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:var(--text2);">割引</span><span>'+discLabel+(r.paid?'　<span style="color:var(--blue)">支払済</span>':'')+'</span></div>'+
       
+      (r.device_name?'<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:var(--text2);">端末</span><span>'+r.device_name+'</span></div>':'')+
       '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><span style="font-weight:700;font-size:15px;">合計</span><span style="font-weight:700;font-size:20px;color:var(--accent2);">¥'+r.total.toLocaleString()+'</span></div>'+
     '</div>';
   // メモ
@@ -2833,6 +2835,98 @@ async function syncSalesData(data, label){
 }
 // 旧関数名を維持（後方互換）
 async function syncSales(){ doSync('all'); }
+
+// ==================== デバイス間同期 ====================
+
+// "M/DD (曜) HH:MM" → ISO文字列
+function parseSaleDateStr(s) {
+  var m = String(s).match(/(\d+)\/(\d+)[^\d]*(\d+):(\d+)/);
+  if (!m) return new Date().toISOString();
+  var mo=parseInt(m[1]), dy=parseInt(m[2]), h=parseInt(m[3]), mi=parseInt(m[4]);
+  var now=new Date(), yr=now.getFullYear();
+  if (mo > now.getMonth()+1) yr--;  // 年末またぎ対応
+  return new Date(yr, mo-1, dy, h, mi).toISOString();
+}
+
+// スプレッドシート行配列 → sale オブジェクト配列
+function rowsToSales(rows) {
+  var groups={}, order=[];
+  for (var i=0; i<rows.length; i++) {
+    var r=rows[i];
+    var id=String(r[14]);
+    if (!id || id==='undefined' || id==='') continue;
+    if (!groups[id]) { groups[id]=[]; order.push(id); }
+    groups[id].push(r);
+  }
+  var mRev={'現金':'cash','クレジットカード':'card','電子決済':'other'};
+  var result=[];
+  for (var j=0; j<order.length; j++) {
+    var id=order[j];
+    var rList=groups[id], first=rList[0];
+    var ageStr=String(first[10]||''), natStr=String(first[11]||'');
+    result.push({
+      id: id,
+      datetime: parseSaleDateStr(String(first[0]||'')),
+      total: Number(first[1])||0,
+      items: rList.map(function(r){
+        return {id:'gs_'+r[2], name:String(r[2]||''), cat:'', qty:Number(r[4])||1, price:Number(r[5])||0, origPrice:Number(r[5])||0};
+      }),
+      discount: String(first[8]||''),
+      method: mRev[String(first[9])]||String(first[9]||''),
+      attrs: {
+        age: ageStr ? ageStr.split('・').filter(Boolean) : [],
+        nationality: natStr ? natStr.split('・').filter(Boolean) : []
+      },
+      memo: String(first[13]||''),
+      device_name: String(first[15]||''),
+      _from_gas: true
+    });
+  }
+  return result;
+}
+
+// GAS取得データをlocalStorageにマージ（既存IDはスキップ）
+function mergeSalesFromGas(remoteSales) {
+  var local=ld(KEYS.sales)||[];
+  var localIds={};
+  local.forEach(function(s){ localIds[s.id]=true; });
+  var added=0;
+  remoteSales.forEach(function(s){
+    if (!localIds[s.id]) { local.push(s); added++; }
+  });
+  if (added>0) {
+    local.sort(function(a,b){ return new Date(b.datetime)-new Date(a.datetime); });
+    sv(KEYS.sales, local);
+    sales=local;
+  }
+  return added;
+}
+
+// デバイス間同期: このデバイスをpush → GAS全件pull → マージ
+async function syncDevices() {
+  var url=ld(KEYS.gas)||DEFAULT_GAS_URL;
+  if (!url) { showToast('⚠ GAS URLが設定されていません','#c00'); return; }
+  showToast('🔄 デバイス間同期中...', null, 20000);
+  try {
+    // Step1: このデバイスの全データをpush（他デバイスのデータは消さない）
+    var allRows=sales.map(function(s){ return saleToRows(s); });
+    await gasPost(url, {type:'bulk_merge', sales:allRows});
+    // Step2: GASの全売上をpull
+    var qs='?d='+encodeURIComponent(JSON.stringify({type:'get_all_sales'}));
+    var res=await fetch(url+qs, {method:'GET', redirect:'follow'});
+    var json=await res.json();
+    if (json.status==='ok' && json.data && json.data.rows) {
+      var remoteSales=rowsToSales(json.data.rows);
+      var added=mergeSalesFromGas(remoteSales);
+      renderSales();
+      showToast('✓ デバイス間同期完了（'+added+'件追加）', null, 4000);
+    } else {
+      showToast('⚠ データ取得エラー','#c00');
+    }
+  } catch(e) {
+    showToast('⚠ 通信エラー: '+e.message,'#c00');
+  }
+}
 
 // 決済ごとに自動送信（新規）
 async function autoSyncSale(sale){

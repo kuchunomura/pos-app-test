@@ -102,7 +102,29 @@ function handleRequest(data) {
     }
     for (var i = 0; i < bSales.length; i++) { if (bSales[i] && bSales[i].length) addRows(bSales[i]); }
   }
+  else if (type === 'get_all_sales') {
+    return { rows: getAllSalesRows() };
+  }
   return null;
+}
+
+function getAllSalesRows() {
+  var ss = SpreadsheetApp.openById(SS_ID);
+  var sheets = ss.getSheets();
+  var allRows = [];
+  for (var s = 0; s < sheets.length; s++) {
+    var name = sheets[s].getName();
+    if (name.indexOf('月別集計') !== -1) continue;
+    if (!name.match(/売上$/)) continue;
+    var sheet = sheets[s];
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 4) continue;
+    var rows = sheet.getRange(4, 1, lastRow - 3, 16).getValues();
+    for (var i = 0; i < rows.length; i++) {
+      allRows.push(rows[i]);
+    }
+  }
+  return allRows;
 }
 
 // ==================== シート名 ====================
