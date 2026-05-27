@@ -101,6 +101,7 @@ function handleRequest(data) {
       if (bId) { for (var j = 0; j < sheets.length; j++) deleteRowsFromSheet(sheets[j], bId); }
     }
     for (var i = 0; i < bSales.length; i++) { if (bSales[i] && bSales[i].length) addRows(bSales[i]); }
+    sortSheetsByDate(SpreadsheetApp.openById(SS_ID));
   }
   else if (type === 'get_all_sales') {
     return { rows: getAllSalesRows() };
@@ -238,6 +239,32 @@ function addRows(rows) {
   SpreadsheetApp.flush();
   setDataColumnWidths(sheet);
   updateSummary(sheet);
+  sortSheetsByDate(ss);
+}
+
+function sortSheetsByDate(ss) {
+  var sheets = ss.getSheets();
+  var dated = [], other = [];
+  for (var i = 0; i < sheets.length; i++) {
+    var name = sheets[i].getName();
+    var m = name.match(/^(?:(\d{4})\/)?(\d+)\/(\d+)/);
+    if (m) {
+      var yr = m[1] ? parseInt(m[1]) : new Date().getFullYear();
+      dated.push({ sheet: sheets[i], key: yr * 10000 + parseInt(m[2]) * 100 + parseInt(m[3]) });
+    } else {
+      other.push(sheets[i]);
+    }
+  }
+  dated.sort(function(a, b) { return b.key - a.key; }); // 新しい日付が前
+  var pos = 1;
+  for (var i = 0; i < dated.length; i++) {
+    ss.setActiveSheet(dated[i].sheet);
+    ss.moveActiveSheet(pos++);
+  }
+  for (var i = 0; i < other.length; i++) {
+    ss.setActiveSheet(other[i]);
+    ss.moveActiveSheet(pos++);
+  }
 }
 
 function replaceRows(saleId, rows) {
@@ -707,25 +734,19 @@ function createMonthlySummary(year, month) {
   row++;
 
   // 村民
-  secHead('【村民割引】', 3);
-  colHead(['','件数','人数']);
-  out.getRange(row,1,1,3).setValues([['売上合計', mura.count, mura.people]]);
-  out.getRange(row,1).setValue('件数 / 人数');
-  out.getRange(row,1,1,3).setHorizontalAlignment('center');
-  row++;
-  out.getRange(row,1,1,2).setValues([['売上合計', mura.total]]);
-  out.getRange(row,2).setNumberFormat('#,##0');
-  out.getRange(row,1,1,2).setHorizontalAlignment('center');
+  secHead('【村民割引】', 4);
+  colHead(['','件数','人数','売上合計']);
+  out.getRange(row,1,1,4).setValues([['村民割引',mura.count,mura.people,mura.total]]);
+  out.getRange(row,4).setNumberFormat('#,##0');
+  out.getRange(row,1,1,4).setHorizontalAlignment('center');
   row += 2;
 
   // 年間パス
-  secHead('【年間パス】', 3);
-  colHead(['','件数','人数']);
-  out.getRange(row,1,1,3).setValues([['件数 / 人数', pass.count, pass.people]]).setHorizontalAlignment('center');
-  row++;
-  out.getRange(row,1,1,2).setValues([['売上合計', pass.total]]);
-  out.getRange(row,2).setNumberFormat('#,##0');
-  out.getRange(row,1,1,2).setHorizontalAlignment('center');
+  secHead('【年間パス】', 4);
+  colHead(['','件数','人数','売上合計']);
+  out.getRange(row,1,1,4).setValues([['年間パス',pass.count,pass.people,pass.total]]);
+  out.getRange(row,4).setNumberFormat('#,##0');
+  out.getRange(row,1,1,4).setHorizontalAlignment('center');
   row += 2;
 
   // 年齢層別
