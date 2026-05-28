@@ -762,12 +762,12 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 263;
-const APP_BUILD_DATE = '2026/05/28 12:08';
+const APP_VERSION = 264;
+const APP_BUILD_DATE = '2026/05/28 13:30';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbwO3nrFBG7gDCwbRALgqReIO4Axyfm5mjfgIk9VLyh5o80_qSx8y70SqtYkuCtCpe8BXA/exec';
-const KEYS = {items:'pos_items',sales:'pos_sales',gas:'pos_gas',cats:'pos_cats',itemOrder:'pos_item_order',catOrder:'pos_cat_order',sites:'pos_sites',discounts:'pos_discounts',attrs:'pos_attrs',holds:'pos_holds',deviceId:'pos_device_id'};
+const KEYS = {items:'pos_items',sales:'pos_sales',gas:'pos_gas_test',cats:'pos_cats',itemOrder:'pos_item_order',catOrder:'pos_cat_order',sites:'pos_sites',discounts:'pos_discounts',attrs:'pos_attrs',holds:'pos_holds',deviceId:'pos_device_id'};
 // デバイスID自動生成（初回のみ）
 (function(){var d=localStorage.getItem('pos_device_id');if(!d){d=Math.random().toString(36).slice(2,6).toUpperCase();localStorage.setItem('pos_device_id',d);}})();
 // ===== ストレージ（IndexedDB + localStorage二重書き） =====
