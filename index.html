@@ -852,8 +852,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 306;
-const APP_BUILD_DATE = '2026/06/03 23:28';
+const APP_VERSION = 307;
+const APP_BUILD_DATE = '2026/06/03 23:33';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -3248,8 +3248,10 @@ function getManualSSUrl(){
 }
 function getCurrentSSUrl(){
   var stored=localStorage.getItem('pos_current_ss_id');
-  return 'https://docs.google.com/spreadsheets/d/'+(stored||'1mVw1DN78bVr5SiWCUDZ2HlVhalgwH4bzi3UnlS1uTFY')+'/edit?pli=1';
+  return 'https://docs.google.com/spreadsheets/d/'+(stored||'1_iNytjWzVi6vvd_nSecG_uZJEnzkoL8zynY12UkNrNM')+'/edit?pli=1';
 }
+// 起動時にpos testのSSを強制設定
+localStorage.setItem('pos_current_ss_id','1_iNytjWzVi6vvd_nSecG_uZJEnzkoL8zynY12UkNrNM');
 async function openSwitchSSModal(){
   var modal=document.getElementById('switch-ss-modal');
   var cur=document.getElementById('switch-ss-current');
