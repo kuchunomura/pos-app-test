@@ -852,8 +852,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 314;
-const APP_BUILD_DATE = '2026/06/04 00:49';
+const APP_VERSION = 318;
+const APP_BUILD_DATE = '2026/06/04 07:41';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -3225,7 +3225,16 @@ async function submitInvoice(){
     if(json.data&&json.data.sheet){
       res.style.color='#27ae60';
       res.textContent='✅ '+json.data.sheet+' を作成しました';
-      if(recordMode!=='none') autoSyncSale(r);
+      if(recordMode!=='none'){
+        if(recordMode==='other'){
+          var dv=document.getElementById('inv-date').value;
+          var altSale=Object.assign({},r);
+          altSale.datetime=new Date(dv+'T12:00:00').toISOString();
+          autoSyncSale(altSale);
+        } else {
+          autoSyncSale(r);
+        }
+      }
       setTimeout(closeInvoiceModal, 2000);
     } else {
       res.style.color='#c00'; res.textContent='❌ 作成失敗 '+(json.message||'');
