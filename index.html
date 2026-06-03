@@ -894,8 +894,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 320;
-const APP_BUILD_DATE = '2026/06/04 08:09';
+const APP_VERSION = 321;
+const APP_BUILD_DATE = '2026/06/04 08:14';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -3243,7 +3243,8 @@ async function submitInvoiceFromCart(){
   if(!cart.length) return;
   var docType = document.querySelector('input[name="inv-cart-doctype"]:checked').value;
   var recordMode = document.querySelector('input[name="inv-cart-record"]:checked').value;
-  var method = document.querySelector('input[name="inv-cart-method"]:checked').value;
+  var methodEl=document.querySelector('input[name="inv-cart-method"]:checked')||document.querySelector('input[name="inv-cart-method"]');
+  var method=methodEl?methodEl.value:'cash';
   var recipient = document.getElementById('inv-cart-recipient').value.trim();
   var memo = document.getElementById('inv-cart-memo').value.trim();
   var res = document.getElementById('invoice-cart-result');
