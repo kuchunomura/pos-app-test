@@ -1,0 +1,616 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POSレジ 取扱説明書</title>
+<style>
+  body { font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif; font-size: 14px; color: #1a1a1a; max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; line-height: 1.8; background: #fff; }
+  h1 { font-size: 22px; font-weight: 700; border-bottom: 3px solid #2d5016; padding-bottom: 8px; margin-bottom: 6px; color: #2d5016; }
+  h2 { font-size: 17px; font-weight: 700; border-left: 5px solid #2d5016; padding-left: 10px; margin-top: 40px; margin-bottom: 10px; color: #2d5016; }
+  h3 { font-size: 15px; font-weight: 700; margin-top: 24px; margin-bottom: 8px; color: #8b4513; }
+  h4 { font-size: 13px; font-weight: 700; margin-top: 18px; margin-bottom: 6px; color: #333; border-bottom: 1px dashed #ccc; padding-bottom: 3px; }
+  h5 { font-size: 13px; font-weight: 700; margin-top: 14px; margin-bottom: 4px; color: #555; }
+  p { margin: 6px 0 10px; }
+  ul, ol { margin: 6px 0 10px; padding-left: 24px; }
+  li { margin-bottom: 3px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 16px; font-size: 13px; }
+  th { background: #2d5016; color: #fff; padding: 7px 10px; text-align: left; font-weight: 600; }
+  td { padding: 6px 10px; border: 1px solid #ddd; }
+  tr:nth-child(even) td { background: #f9f9f9; }
+  code { background: #f0f0f0; border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; color: #c0392b; }
+  pre { background: #f4f4f4; border: 1px solid #ddd; border-radius: 6px; padding: 12px; font-family: monospace; font-size: 12px; overflow-x: auto; line-height: 1.6; }
+  pre code { background: none; padding: 0; color: #333; }
+  blockquote { background: #fffbe6; border-left: 4px solid #f0ad00; margin: 10px 0; padding: 8px 14px; border-radius: 0 6px 6px 0; font-size: 13px; }
+  blockquote p { margin: 0; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 28px 0; }
+  strong { font-weight: 700; }
+  .meta { color: #666; font-size: 13px; margin-bottom: 16px; }
+  .toc { background: #f0f4e8; border: 1px solid #c8dca8; border-radius: 8px; padding: 14px 20px; margin: 16px 0 28px; }
+  .toc p { font-weight: 700; margin: 0 0 8px; color: #2d5016; }
+  .toc ol { margin: 0; }
+  .toc li { margin-bottom: 2px; font-size: 13px; }
+  .warn { background: #fde8e8; border-left: 4px solid #c0392b; margin: 10px 0; padding: 8px 14px; border-radius: 0 6px 6px 0; font-size: 13px; }
+  .section-divider { border-top: 2px solid #e0d8d0; margin: 16px 0 10px; }
+  @media print {
+    body { max-width: 100%; padding: 10px; font-size: 12px; }
+    h2 { page-break-before: auto; }
+    table { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>POSレジ 取扱説明書</h1>
+<div class="meta">
+  <strong>バージョン</strong>: 255（2026/05/12 時点）
+  <strong>対応端末</strong>: iPad / PC / Android タブレット
+  <strong>アプリURL</strong>: <a href="https://kuchunomura.github.io/pos-app-test">https://kuchunomura.github.io/pos-app-test</a>
+</div>
+
+<div class="toc">
+  <p>目次</p>
+  <ol>
+    <li><a href="#s1">基本画面構成</a></li>
+    <li><a href="#s2">レジタブ（🛒レジ）</a></li>
+    <li><a href="#s3">支払い操作</a></li>
+    <li><a href="#s4">宿泊商品の操作</a></li>
+    <li><a href="#s5">保留機能</a></li>
+    <li><a href="#s6">翌日・翌々日計上モード</a></li>
+    <li><a href="#s7">時間計算タブ（⏱時間）</a></li>
+    <li><a href="#s8">売上タブ（📊売上）</a></li>
+    <li><a href="#s9">設定タブ（⚙️設定）</a></li>
+    <li><a href="#s10">GAS連携の仕組みと注意点</a></li>
+    <li><a href="#s11">複数デバイス運用</a></li>
+    <li><a href="#s12">アプリ更新・キャッシュ問題</a></li>
+    <li><a href="#s13">データバックアップ・引き継ぎ</a></li>
+    <li><a href="#s14">よくある操作 Q&amp;A</a></li>
+    <li><a href="#s15">スプレッドシート（GAS）のシート構成</a></li>
+  </ol>
+</div>
+
+<hr>
+
+<h2 id="s1">1. 基本画面構成</h2>
+<p>画面上部に4つのタブがあります。</p>
+<table>
+  <tr><th>タブ</th><th>内容</th></tr>
+  <tr><td>🛒 レジ</td><td>商品登録・カート・支払い（メイン操作）</td></tr>
+  <tr><td>⏱ 時間</td><td>空中ウォーク・ツリーハウスの終了時刻計算</td></tr>
+  <tr><td>📊 売上</td><td>売上明細・集計・CSV出力・GAS同期</td></tr>
+  <tr><td>⚙️ 設定</td><td>商品・カテゴリー・各種設定</td></tr>
+</table>
+
+<hr>
+
+<h2 id="s2">2. レジタブ</h2>
+
+<h3>2-1. 商品エリア（左側）</h3>
+
+<h4>カテゴリーフィルター</h4>
+<p>画面左上に横スクロールできるカテゴリータブがあります。</p>
+<ul>
+  <li><strong>すべて</strong>: 全カテゴリーの商品を表示</li>
+  <li>各カテゴリー名をタップ: そのカテゴリーの商品だけを表示</li>
+</ul>
+
+<table>
+  <tr><th>カテゴリー</th><th>主な商品</th></tr>
+  <tr><td>空中ウォーク</td><td>55分・115分・1DAY</td></tr>
+  <tr><td>ツリーハウス昼</td><td>55分・115分・1DAY</td></tr>
+  <tr><td>BBQ</td><td>BBQスペース</td></tr>
+  <tr><td>宿泊：ツリーハウス</td><td>ツリーハウス（人数別価格）</td></tr>
+  <tr><td>宿泊：ドーム</td><td>ミラー・クリア・グレー</td></tr>
+  <tr><td>宿泊：空中テント</td><td>テント①②③</td></tr>
+  <tr><td>宿泊：ハンモック</td><td>ハンモック①②</td></tr>
+  <tr><td>備品レンタル</td><td>焚火台・スキレット・ランタン等</td></tr>
+  <tr><td>ペット</td><td>ペット料金</td></tr>
+  <tr><td>受付飲食</td><td>コーヒー・アイスクリーム等</td></tr>
+  <tr><td>グッズ</td><td>ポスカード・ひのきグッズ等</td></tr>
+  <tr><td>無人販売</td><td>薪・コーヒー等</td></tr>
+  <tr><td>消耗品</td><td>マッチ・歯ブラシ等</td></tr>
+  <tr><td>ピクニック飲食</td><td>クッキー・タルト等</td></tr>
+</table>
+
+<h4>商品ボタンをタップ</h4>
+<p>タップするとカートに追加されます。<br>
+宿泊商品（ツリーハウス・ドーム・テント・ハンモック）は<strong>人数選択モーダル</strong>が開きます。</p>
+
+<h4>カテゴリーヘッダーの時間スロット表示</h4>
+<p>空中ウォーク・ツリーハウス昼のカテゴリーヘッダーには、<strong>現在時刻からの終了時刻</strong>がリアルタイムで表示されます。</p>
+<ul>
+  <li>例: <code>55分→14:35</code>　<code>115分→15:35</code>　<code>1DAY→17:00</code></li>
+  <li>カートに入っているコースは<strong>太字・赤色</strong>でハイライト</li>
+  <li>決済完了後3分間は直前の決済内容でハイライト継続</li>
+</ul>
+
+<h4>✏️ 編集ボタン</h4>
+<p>商品やカテゴリーの並び替え・個別編集が可能になる「編集モード」に切り替わります。</p>
+<ul>
+  <li>商品ボタン右上のドラッグハンドルで並び替え可能</li>
+  <li>商品ボタンをタップして編集・削除</li>
+</ul>
+
+<h4>🌙 翌日 / 🌙🌙 翌々日ボタン</h4>
+<p>チェックイン当日ではなく翌日・翌々日の売上として記録したい場合に使用します。</p>
+
+<hr class="section-divider">
+
+<h3>2-2. カートエリア（右側）</h3>
+
+<h4>現在時刻・天気</h4>
+<p>右エリア上部に現在時刻がリアルタイム表示されます。<br>
+時刻右の天気アイコン（🌤）をタップすると、今日の天気を複数選択できます（売上データに記録されます）。</p>
+
+<h4>保留スロット</h4>
+<p>カート上部に10個の保留タブがあります。データが入っているスロットはオレンジ色の点（●）で表示されます。</p>
+
+<h4>カート操作</h4>
+<table>
+  <tr><th>操作</th><th>方法</th></tr>
+  <tr><td>商品を増やす</td><td>カート内の <code>＋</code> ボタン</td></tr>
+  <tr><td>商品を減らす</td><td>カート内の <code>－</code> ボタン（0になると削除）</td></tr>
+  <tr><td>商品を削除</td><td>右端の <code>×</code> をタップ</td></tr>
+  <tr><td>カートをクリア</td><td>下部の 🗑 クリア ボタン</td></tr>
+</table>
+
+<h4>支払いボタン</h4>
+<table>
+  <tr><th>ボタン</th><th>支払方法</th></tr>
+  <tr><td>💴 現金</td><td>現金（お釣り計算あり）</td></tr>
+  <tr><td>💳 カード</td><td>クレジットカード</td></tr>
+  <tr><td>📱 電子</td><td>電子決済（PayPay等）</td></tr>
+</table>
+
+<hr class="section-divider">
+
+<h3>2-3. 割引・予約サイト</h3>
+<p>左エリア下部の「<strong>割引・予約サイト</strong>」エリアをタップすると展開/折りたたみできます。</p>
+
+<h4>割引ボタン（赤紫色でアクティブ）</h4>
+<table>
+  <tr><th>ボタン名</th><th>内容</th></tr>
+  <tr><td>村内（半額）</td><td>空中ウォーク・ツリーハウス昼を半額。BBQ等は無料</td></tr>
+  <tr><td>宿泊者</td><td>空中ウォーク115分・1DAYを500円引き</td></tr>
+</table>
+
+<h4>予約サイトボタン（青色でアクティブ）</h4>
+<p>楽天・じゃらん・SOU・年間パス（昼）・年間パス（夜）など。<br>
+選択すると宿泊商品に<strong>「支払済」バッジ</strong>が表示され、料金が ¥0 扱いになります。</p>
+<blockquote><p><strong>注意</strong>: 割引と予約サイトは同時に1つずつ選択可能です。同じボタンを再タップで解除できます。</p></blockquote>
+
+<hr class="section-divider">
+
+<h3>2-4. 属性入力（👤）</h3>
+<p>左エリア下部の 👤 エリアをタップすると展開/折りたたみできます。<br>
+顧客の年齢層・国籍を選択して売上データに記録できます（集計分析に活用）。複数選択可。支払い完了後にリセット。</p>
+
+<h3>2-5. 未登録商品（金額手入力）</h3>
+<p>左エリア最下部の入力欄に金額を入力して <strong>追加</strong> ボタンをタップすると、「未登録商品」としてカートに追加されます。</p>
+
+<hr>
+
+<h2 id="s3">3. 支払い操作</h2>
+
+<h3>現金払い</h3>
+<ol>
+  <li><strong>💴 現金</strong> ボタンをタップ</li>
+  <li>決済確認モーダルが開く</li>
+  <li>「受取金額」欄に受け取ったお金の金額を入力
+    <ul>
+      <li>金額ボタン（50 / 100 / 500 / 1,000 / 5,000 / 10,000）をタップして積み上げ可能</li>
+      <li><strong>C</strong> ボタンで入力をクリア</li>
+      <li><strong>ちょうど</strong> ボタンで合計金額を自動入力</li>
+    </ul>
+  </li>
+  <li>お釣りが自動計算・表示される</li>
+  <li><strong>決済完了</strong> ボタンをタップ</li>
+</ol>
+
+<h3>カード払い・電子決済</h3>
+<ol>
+  <li><strong>💳 カード</strong> または <strong>📱 電子</strong> ボタンをタップ</li>
+  <li>確認モーダルが開く（金額のみ表示）</li>
+  <li><strong>決済完了</strong> ボタンをタップ</li>
+</ol>
+<blockquote><p>電子決済で決済すると、メモ欄に自動で「<strong>電子決済、伝票2枚だからレジ締め注意</strong>」が記録されます。</p></blockquote>
+
+<h3>決済完了画面</h3>
+<table>
+  <tr><th>ボタン</th><th>動作</th></tr>
+  <tr><td>✅ 次のお客様へ</td><td>カートをクリアして次の会計へ（180秒後に自動実行）</td></tr>
+  <tr><td>🔴 印をつけて閉じる</td><td>売上に赤フラグを立てて閉じる（後で確認が必要な場合）</td></tr>
+</table>
+
+<hr>
+
+<h2 id="s4">4. 宿泊商品の操作</h2>
+
+<h3>人数選択</h3>
+<p>ツリーハウス・ドーム・テント・ハンモックをタップすると<strong>人数選択モーダル</strong>が開きます。人数に応じて1人あたりの宿泊料金が変わります。</p>
+
+<table>
+  <tr><th>人数（ツリーハウス例）</th><th>価格</th></tr>
+  <tr><td>1名</td><td>¥14,000</td></tr>
+  <tr><td>2名</td><td>¥12,000</td></tr>
+  <tr><td>3名</td><td>¥10,000</td></tr>
+  <tr><td>4名</td><td>¥8,000</td></tr>
+  <tr><td>5名以上</td><td>¥8,000</td></tr>
+</table>
+<p>各ドーム・テントには色付きの点（●）でタイプが識別できます（ミラー=灰、クリア=水色、グレー=グレー等）。</p>
+
+<h3>支払済みバッジ（楽天・じゃらん・SOU）</h3>
+<p>割引バーで <strong>楽天 / じゃらん / SOU / 年間パス</strong> を選択すると、宿泊商品に「支払済」バッジが表示され、料金が¥0になります。バッジの文言・色は設定から変更可能です。</p>
+
+<hr>
+
+<h2 id="s5">5. 保留機能</h2>
+<p>複数グループの会計を同時進行させたいときに使います。最大10件まで保留できます。</p>
+
+<h3>保留する</h3>
+<ol>
+  <li>カートに商品を入れた状態で <strong>⏸ 保留</strong> ボタンをタップ</li>
+  <li>タイトル入力モーダルが開く（空欄の場合は時刻がタイトルになる）</li>
+  <li>タイトルを入力して <strong>保留する</strong> をタップ</li>
+  <li>カートがクリアされ、保留スロットにデータが保存される</li>
+</ol>
+
+<h3>保留から戻す</h3>
+<ol>
+  <li>保留タブ（カート上部）の番号をタップ</li>
+  <li>そのスロットのカートが復元される</li>
+</ol>
+<blockquote><p>保留スロットにデータがある場合はタブにオレンジ点（●）が表示されます。</p></blockquote>
+
+<hr>
+
+<h2 id="s6">6. 翌日・翌々日計上モード</h2>
+<p>チェックインは今日でも、料金を翌日または翌々日の売上として記録したい場合に使用します。</p>
+<ol>
+  <li>左エリア上部の <strong>🌙 翌日</strong> または <strong>🌙🌙 翌々日</strong> ボタンをタップ</li>
+  <li>カート右上に黄色バナー「🌙 翌日計上モード ON」が表示される</li>
+  <li>この状態で決済すると、売上日時が翌日（または翌々日）の日付で記録される</li>
+  <li>同じボタンをもう一度タップするとモードが解除される</li>
+</ol>
+
+<hr>
+
+<h2 id="s7">7. 時間計算タブ</h2>
+<p>施設の終了時刻を素早く計算するツールです。</p>
+
+<h3>単体計算</h3>
+<ol>
+  <li><strong>施設</strong>（空中ウォーク / ツリーハウス昼）を選択</li>
+  <li><strong>コース</strong>（55分 / 115分 / 1DAY）を選択</li>
+  <li><strong>開始時間</strong> を入力（または <strong>今すぐ</strong> ボタンで現在時刻を自動入力）</li>
+  <li>終了時刻とカウントダウンが表示される</li>
+</ol>
+
+<table>
+  <tr><th>施設</th><th>営業時間</th><th>最終受付</th></tr>
+  <tr><td>空中ウォーク</td><td>9:00〜17:00</td><td>16:00</td></tr>
+  <tr><td>ツリーハウス昼</td><td>10:00〜16:00</td><td>15:00</td></tr>
+</table>
+
+<h3>両方利用（コンボ計算）</h3>
+<p>空中ウォークとツリーハウスを連続利用する場合の時刻計算です。</p>
+<ol>
+  <li><strong>順番</strong>（空中ウォーク→ツリーハウス or ツリーハウス→空中ウォーク）を選択</li>
+  <li>各施設のコース時間を選択</li>
+  <li>開始時間を入力（または <strong>今すぐ</strong>）</li>
+  <li>各施設の終了時刻が表示される</li>
+</ol>
+
+<hr>
+
+<h2 id="s8">8. 売上タブ</h2>
+
+<h3>明細ビュー（📋 明細）</h3>
+<table>
+  <tr><th>操作</th><th>方法</th></tr>
+  <tr><td>今日の売上を表示</td><td>📅 今日 ボタン</td></tr>
+  <tr><td>昨日の売上を表示</td><td>昨日 ボタン</td></tr>
+  <tr><td>日付を絞り込む</td><td>日付入力欄に範囲を入力して 絞込 ボタン</td></tr>
+  <tr><td>全件表示</td><td>全件 ボタン</td></tr>
+</table>
+
+<h4>売上の編集・削除</h4>
+<p>明細テーブルの各行をタップ → <strong>売上詳細モーダル</strong> が開きます。</p>
+<ul>
+  <li>メモの追加・変更</li>
+  <li>属性（年齢層・国籍）の変更</li>
+  <li>🔴 印の付与・解除</li>
+  <li>削除</li>
+</ul>
+
+<h4>売上の修正（金額・商品変更）</h4>
+<p>明細テーブルの <strong>修正</strong> ボタンをタップすると、その売上データがカートに読み込まれます。修正後に再度決済することで売上データが更新されます。</p>
+
+<h3>集計ビュー（📊 集計）</h3>
+<table>
+  <tr><th>期間ボタン</th><th>内容</th></tr>
+  <tr><td>📅 今日</td><td>当日のみ</td></tr>
+  <tr><td>今週</td><td>今週月〜日</td></tr>
+  <tr><td>今月</td><td>今月1日〜末日</td></tr>
+  <tr><td>カスタム</td><td>任意の開始〜終了日</td></tr>
+</table>
+<table>
+  <tr><th>グラフ</th><th>内容</th></tr>
+  <tr><td>日別</td><td>日ごとの売上棒グラフ</td></tr>
+  <tr><td>時間帯別</td><td>時間帯ごとの件数棒グラフ</td></tr>
+  <tr><td>曜日別</td><td>曜日ごとの集計</td></tr>
+  <tr><td>商品別</td><td>商品別売上金額・数量</td></tr>
+  <tr><td>属性別</td><td>年齢層・国籍別の組数・人数</td></tr>
+  <tr><td>割引別</td><td>割引種別ごとの件数</td></tr>
+</table>
+
+<h3>CSV出力</h3>
+<p><strong>📥 CSV</strong> ボタンをタップすると、現在の絞込条件の売上データをCSVファイルとしてダウンロードできます。</p>
+
+<h3>Googleスプレッドシート同期（📊 同期）</h3>
+<table>
+  <tr><th>メニュー</th><th>内容</th></tr>
+  <tr><td>今日分</td><td>当日の売上データをGASへ送信</td></tr>
+  <tr><td>昨日分</td><td>前日の売上データをGASへ送信</td></tr>
+  <tr><td>絞込分</td><td>明細ビューの絞込条件分を送信</td></tr>
+  <tr><td>全件</td><td>全売上データを送信（シートを一度クリアして再送）</td></tr>
+</table>
+
+<hr>
+
+<h2 id="s9">9. 設定タブ</h2>
+
+<h3>カテゴリー管理</h3>
+<table>
+  <tr><th>項目</th><th>説明</th></tr>
+  <tr><td>カテゴリー名</td><td>商品グリッドに表示される名前</td></tr>
+  <tr><td>背景色</td><td>商品ボタンの背景色</td></tr>
+  <tr><td>枠色</td><td>商品ボタンの枠線色</td></tr>
+  <tr><td>文字色</td><td>商品名の文字色</td></tr>
+  <tr><td>金額色</td><td>価格の文字色</td></tr>
+</table>
+
+<h3>商品登録</h3>
+<table>
+  <tr><th>項目</th><th>説明</th></tr>
+  <tr><td>商品名</td><td>ボタンに表示される名前</td></tr>
+  <tr><td>金額（円）</td><td>販売価格</td></tr>
+  <tr><td>カテゴリー</td><td>所属カテゴリー</td></tr>
+  <tr><td>在庫数</td><td>0=在庫表示なし、1以上=残数表示あり</td></tr>
+</table>
+<blockquote><p>商品ボタンの細かい設定（文字サイズ・名前カラー）はレジタブの「✏️ 編集モード」から商品をタップして編集できます。</p></blockquote>
+
+<h3>割引・予約サイト設定</h3>
+<table>
+  <tr><th>種別</th><th>動作</th></tr>
+  <tr><td>予約サイト（支払済）</td><td>宿泊商品を「支払済」扱いにして¥0表示</td></tr>
+  <tr><td>割引</td><td>カート内の価格を割引計算</td></tr>
+</table>
+<blockquote><p>「村内（半額）」「宿泊者」は固定項目（削除不可）。楽天・じゃらん・SOU・年間パスは削除・追加が可能。</p></blockquote>
+
+<h3>GAS連携（スプレッドシート連携）</h3>
+<table>
+  <tr><th>項目</th><th>説明</th></tr>
+  <tr><td>GAS WebアプリURL</td><td>Google Apps ScriptのデプロイURL</td></tr>
+  <tr><td>端末名</td><td>スプレッドシートのP列に記録される名前（例：レジ1）</td></tr>
+</table>
+<p><strong>接続テスト</strong>: URLを保存後、「🔗 接続テスト」ボタンで疎通確認できます。</p>
+
+<h3>表示サイズ調整</h3>
+<table>
+  <tr><th>設定</th><th>内容</th></tr>
+  <tr><td>文字サイズ</td><td>70〜130%で調整</td></tr>
+  <tr><td>カート幅</td><td>20〜45vw（ビューポート幅に対する比率）で調整</td></tr>
+</table>
+
+<h3>データリセット</h3>
+<p>特定の項目を初期値（コードのデフォルト値）に戻します。<strong>手動で変更した設定は元に戻せません。</strong></p>
+<table>
+  <tr><th>リセット対象</th><th>内容</th></tr>
+  <tr><td>カテゴリー</td><td>宿泊4分割など最新の初期カテゴリーに戻す</td></tr>
+  <tr><td>商品リスト</td><td>最新の初期商品リストに戻す</td></tr>
+  <tr><td>割引・予約サイト設定</td><td>デフォルトの割引設定に戻す</td></tr>
+</table>
+<blockquote><p><strong>売上データ・GAS URLはリセット対象外</strong>です。</p></blockquote>
+
+<hr>
+
+<h2 id="s10">10. GAS連携の仕組みと注意点</h2>
+
+<h3>自動同期（決済ごと）</h3>
+<p><strong>決済が完了するたびに自動でGASに送信されます。</strong> 手動操作は不要です。</p>
+<table>
+  <tr><th>イベント</th><th>GASへの動作</th></tr>
+  <tr><td>決済完了</td><td>スプレッドシートに行を追加</td></tr>
+  <tr><td>売上の修正（カートで再決済）</td><td>元の行を削除 → 新しい行を追加</td></tr>
+  <tr><td>売上詳細でメモ・属性を変更して保存</td><td>該当行を更新</td></tr>
+  <tr><td>売上詳細から削除</td><td>該当行を削除</td></tr>
+</table>
+<blockquote><p>自動同期はバックグラウンドで行われます。失敗した場合はオレンジ色のトースト「⚠ GAS同期エラー」が表示されます。</p></blockquote>
+
+<h3>手動同期（📊 同期ボタン）の用途</h3>
+<ul>
+  <li>通信エラーで自動同期が失敗したとき → 「今日分」で再送</li>
+  <li>別端末の売上をまとめてスプレッドシートに反映したいとき → 「全件」</li>
+  <li>特定日付の売上だけ再送したいとき → 日付絞込 → 「絞込分」</li>
+</ul>
+<div class="warn">⚠️ <strong>「全件」を選ぶと既存のシートをクリアして全件再送します。</strong> 複数端末で運用している場合、一方の端末で「全件」を実行するとその端末が持っていない他端末の売上がシートから消えます。</div>
+
+<h3>電子決済時の自動メモ</h3>
+<p>電子決済（📱 電子）で決済すると、メモ欄に自動で以下が記録されます：</p>
+<blockquote><p><strong>「電子決済、伝票2枚だからレジ締め注意」</strong></p></blockquote>
+<p>レジ締め時に現金との突合わせで混乱しないようにする注意書きです。売上詳細から削除できます。</p>
+
+<h3>前日繰越の取得</h3>
+<p>アプリ起動時と日付をまたいだタイミングに、GASから「繰越」メモ付き売上の合計を自動取得し、カート上部の黄色バッジに表示します。複数端末で登録した繰越額が合算されて表示されます。</p>
+
+<h3>GAS URLについて（TEST版）</h3>
+<p>現在のアプリは <strong>TEST版</strong> で、GAS URLはコードに固定されています（設定から変更しても起動時に上書きされます）。main版では設定タブで自由に変更できます。</p>
+
+<hr>
+
+<h2 id="s11">11. 複数デバイス運用</h2>
+
+<h3>データの保存場所</h3>
+<p>このアプリのデータは各端末の <strong>localStorage（ブラウザのローカルストレージ）</strong> に保存されます。<strong>デバイス間でデータは自動共有されません。</strong></p>
+<pre>端末A: localStorage（売上A）  →  GASスプレッドシート（売上A + 売上B が集約）
+端末B: localStorage（売上B）  ↗</pre>
+
+<h3>複数デバイスで運用する場合の原則</h3>
+<table>
+  <tr><th>項目</th><th>挙動</th></tr>
+  <tr><td>売上データ</td><td>各端末独立。決済時に自動でGASへ送信</td></tr>
+  <tr><td>スプレッドシート</td><td>全端末の売上が集約される（リアルタイム）</td></tr>
+  <tr><td>商品・設定</td><td>各端末独立。変更は手動エクスポート→インポートで共有</td></tr>
+  <tr><td>保留データ</td><td>各端末独立（端末間共有不可）</td></tr>
+</table>
+
+<h3>端末名の設定（重要）</h3>
+<p>複数台で運用する場合、どの端末からの売上かをスプレッドシートで識別できるよう、<strong>必ず端末名を設定してください</strong>。</p>
+<ol>
+  <li>設定タブ → <strong>スプレッドシート連携</strong> → 「端末名」欄</li>
+  <li>例: <code>レジ1</code>、<code>レジ2</code>、<code>カウンター</code></li>
+  <li><strong>保存</strong> ボタンをタップ</li>
+</ol>
+<p>設定した端末名はスプレッドシートの <strong>P列（端末名）</strong> に記録されます。</p>
+
+<h3>複数端末間で設定を統一する方法</h3>
+<ol>
+  <li>設定を整えた端末でデータをエクスポート</li>
+  <li>他の端末でインポート</li>
+  <li>売上は重複なしで追加、設定（商品・カテゴリー等）は上書き</li>
+</ol>
+
+<h3>「全件同期」の注意点</h3>
+<div class="warn">⚠️ 複数端末で運用中に一方の端末で「全件」同期を実行すると、その端末が知らない他端末の売上がスプレッドシートから消えます。<br>
+<strong>対策</strong>: 全端末のデータをエクスポート→統合インポートした端末から実行するか、「今日分」「昨日分」など部分同期を使ってください。</div>
+
+<hr>
+
+<h2 id="s12">12. アプリ更新・キャッシュ問題</h2>
+
+<h3>アプリのバージョン確認</h3>
+<p>設定タブの最上部に現在のバージョン情報が表示されます。</p>
+<pre>POSレジ ver.255
+更新: 2026/05/12 | TEST版</pre>
+
+<h3>アプリの更新方法</h3>
+<p>このアプリはGitHub Pages でホストされています。開発者が新しいバージョンをデプロイすると数分以内に公開URLが更新されますが、<strong>ブラウザのキャッシュにより古いバージョンが表示され続けることがあります。</strong></p>
+
+<h4>端末・ブラウザ別キャッシュクリア方法</h4>
+
+<h5>iPad（Safari）</h5>
+<table>
+  <tr><th>方法</th><th>手順</th><th>データへの影響</th></tr>
+  <tr><td>①ハードリフレッシュ（簡易）</td><td>Safariのアドレスバーを再入力して読み込む</td><td>消えない（キャッシュが残る場合あり）</td></tr>
+  <tr><td>②キャッシュ完全削除</td><td>iPad設定 → Safari → 詳細 → Webサイトデータ → 「すべて削除」</td><td>⚠️ localStorage（売上・設定）も消える。事前エクスポート必須</td></tr>
+  <tr><td>③プライベートブラウズ</td><td>Safari「タブ」→「プライベート」→ URLを入力</td><td>消えない（通常タブのデータは見えない）</td></tr>
+</table>
+
+<h5>PC（Chrome / Edge）</h5>
+<table>
+  <tr><th>方法</th><th>手順</th><th>データへの影響</th></tr>
+  <tr><td>①ハードリフレッシュ（最もかんたん）</td><td><code>Ctrl + Shift + R</code>（Windows）/ <code>Cmd + Shift + R</code>（Mac）</td><td>消えない ✅</td></tr>
+  <tr><td>②キャッシュのみ削除</td><td>Chrome: <code>chrome://settings/clearBrowserData</code> →「キャッシュされた画像とファイル」のみチェック</td><td>消えない ✅</td></tr>
+  <tr><td>③Cookie含む完全削除</td><td>上記で「Cookieとサイトデータ」もチェックして削除</td><td>⚠️ localStorage も消える。事前エクスポート必須</td></tr>
+</table>
+
+<h5>Lenovo タブレット（Android Chrome）</h5>
+<table>
+  <tr><th>方法</th><th>手順</th><th>データへの影響</th></tr>
+  <tr><td>①ハードリフレッシュ（簡易）</td><td>Chromeのアドレスバーを再入力 または 更新ボタンを長押し → 「ページを更新」</td><td>消えない（キャッシュが残る場合あり）</td></tr>
+  <tr><td>②キャッシュのみ削除</td><td>Chrome「︙」→ 設定 → プライバシーとセキュリティ → 閲覧履歴データの削除 →「キャッシュされた画像とファイル」のみチェック</td><td>消えない ✅</td></tr>
+  <tr><td>③Cookie含む完全削除</td><td>上記で「Cookieとサイトデータ」もチェックして削除</td><td>⚠️ localStorage も消える。事前エクスポート必須</td></tr>
+  <tr><td>④シークレットモード</td><td>Chrome「︙」→「新しいシークレットタブ」→ URLを入力</td><td>消えない（通常タブのデータは見えない）</td></tr>
+</table>
+
+<h3>アプリ更新後にデータが消えた場合</h3>
+<p>localStorageが削除されると売上・商品・設定が消えます。</p>
+<ol>
+  <li>GASスプレッドシートには売上データが残っています（削除されません）</li>
+  <li>以前エクスポートしたJSONファイルがあればインポートで設定・売上を復元できます</li>
+  <li>バックアップがない場合、商品・カテゴリーの設定は手動で再入力が必要です</li>
+</ol>
+<div class="warn">⚠️ <strong>定期的なエクスポートを強く推奨します。</strong>（週1回程度）</div>
+
+<hr>
+
+<h2 id="s13">13. データバックアップ・引き継ぎ</h2>
+
+<h3>エクスポート（バックアップ）</h3>
+<p>設定タブの「📤 全データをエクスポート」ボタンをタップすると、商品・カテゴリー・設定・売上・保留データをJSONファイルとして書き出します。</p>
+
+<h3>インポート（端末引き継ぎ）</h3>
+<p>「📥 インポート（ファイルを選択）」ボタンをタップして、エクスポートしたJSONファイルを読み込みます。</p>
+<ul>
+  <li>売上・保留は<strong>追加</strong>（重複なし）</li>
+  <li>設定（商品・カテゴリー・GAS URL等）は<strong>上書き</strong></li>
+</ul>
+
+<hr>
+
+<h2 id="s14">14. よくある操作 Q&amp;A</h2>
+
+<p><strong>Q. 決済後に間違えた金額で売上が記録されてしまった</strong><br>
+A. 📊売上タブの明細から該当の行の <strong>修正</strong> ボタンをタップし、カートで修正後に再度決済してください。</p>
+
+<p><strong>Q. 同じ商品を複数のお客様に同時会計したい</strong><br>
+A. 保留機能を使います。1組目のカートを作って ⏸ 保留 → 2組目を入力 → 保留タブを切り替えて精算。</p>
+
+<p><strong>Q. 天気を記録するには？</strong><br>
+A. カート右上の天気アイコン（🌤）をタップして今日の天気を選択・保存すると、その日の売上に天気が記録されます。</p>
+
+<p><strong>Q. 別のiPad（端末）に切り替えたい</strong><br>
+A. 旧端末でデータをエクスポートし、新端末でインポートしてください。GAS URLも移行されます。</p>
+
+<p><strong>Q. スプレッドシートに売上が反映されていない</strong><br>
+A. ①設定タブ →「🔗 接続テスト」で「✅ GAS接続OK」が出るか確認。②接続OKなら 📊同期 →「今日分」で手動再送。③「接続失敗」の場合はGAS URLを確認。</p>
+
+<p><strong>Q. 別の端末から見ると売上がない</strong><br>
+A. 各端末のlocalStorageは独立しています。スプレッドシート側では全端末の売上を確認できます。POS画面で別端末の売上を見るには、その端末のデータをエクスポート → こちらの端末にインポートしてください。</p>
+
+<p><strong>Q. アプリを開いたら古いバージョンのままだった</strong><br>
+A. 端末別の対処：<br>
+・<strong>PC（Chrome/Edge）</strong>: <code>Ctrl+Shift+R</code> でハードリフレッシュ（データは消えない）<br>
+・<strong>Lenovoタブレット（Chrome）</strong>: Chrome「設定」→「閲覧履歴データの削除」→「キャッシュされた画像とファイル」のみ削除（データは消えない）<br>
+・<strong>iPad（Safari）</strong>: 「設定 → Safari → 詳細 → Webサイトデータを削除」→ <strong>売上・設定も消えるため事前エクスポート必須</strong></p>
+
+<p><strong>Q. 電子決済のメモに「伝票2枚...」と自動で入る</strong><br>
+A. 電子決済で決済した際に自動付与される注意書きです。不要な場合は売上詳細のメモ欄から削除できます。</p>
+
+<p><strong>Q. 「全件」同期したら他の端末の売上がスプレッドシートから消えた</strong><br>
+A. 「全件」同期はシートをいったん全クリアして再送するため、その端末が持っていない他端末の売上は消えます。複数台運用時は「今日分」「昨日分」などの部分同期を使ってください。</p>
+
+<hr>
+
+<h2 id="s15">スプレッドシート（GAS）のシート構成</h2>
+<p>売上データはGoogleスプレッドシートに「M/D売上」（例：5/14売上）というシート名で記録されます。</p>
+<table>
+  <tr><th>列</th><th>内容</th></tr>
+  <tr><td>A</td><td>日時</td></tr>
+  <tr><td>B</td><td>売上合計</td></tr>
+  <tr><td>C</td><td>商品名</td></tr>
+  <tr><td>D</td><td>カテゴリー</td></tr>
+  <tr><td>E</td><td>数量</td></tr>
+  <tr><td>F</td><td>単価</td></tr>
+  <tr><td>G</td><td>小計</td></tr>
+  <tr><td>H</td><td>人数</td></tr>
+  <tr><td>I</td><td>割引</td></tr>
+  <tr><td>J</td><td>支払方法</td></tr>
+  <tr><td>K</td><td>年齢層</td></tr>
+  <tr><td>L</td><td>国籍</td></tr>
+  <tr><td>M</td><td>天気</td></tr>
+  <tr><td>N</td><td>メモ</td></tr>
+  <tr><td>O</td><td>売上ID</td></tr>
+  <tr><td>P</td><td>端末名</td></tr>
+</table>
+<p>シート1行目には集計（総件数・総売上・現金/クレジット/電子決済合計）が自動更新されます。<br>
+2行目にはレジ現金の手入力欄と差額計算式があります。<br>
+右側（R〜AC列）には商品別・年齢層別・国籍別の集計テーブルが自動生成されます。</p>
+
+<hr>
+<p style="color:#999;font-size:12px;text-align:right;">最終更新: 2026/05/14</p>
+
+</body>
+</html>
+

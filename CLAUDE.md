@@ -1,8 +1,8 @@
-# POS レジ アプリ
+﻿# POS レジ アプリ
 
 ## 概要
 屋外施設向けのシンプルなPOSレジ。単一HTMLファイル（`index.html`）で完結。  
-**公開URL**: https://whwkwkss30ma-ux.github.io/pos-app-test
+**公開URL**: https://kuchunomura.github.io/pos-app-test
 
 ## 動作環境
 - **ターゲット**: iPad 第6世代（iOS 15以下）の Safari
@@ -79,3 +79,4 @@ git commit -m "変更内容"
 git push origin main
 ```
 GitHub Pages が自動更新される（数分かかる場合あり）。
+
