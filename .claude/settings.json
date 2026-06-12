@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.github.com)",
+      "Bash(curl -s -L -X POST \"https://script.google.com/macros/s/AKfycbz2oz3hTdemYeN2hsFoTDAsu1lv7JCbNV2JPCxRm0kCVShmfe6qYmX_byHy6QxJ8YfF/exec\" -H \"Content-Type: application/json\" -d '{\"type\":\"add_rows\",\"rows\":[[\"2026-04-29T10:00:00.000Z\",\"火\",\"1000\",\"テスト商品\",\"テスト\",1,1000,1000,1,\"\",\"現金\",\"\",\"\",\"\",\"\",\"test_id_debug\",\"テスト端末\"]]}' --max-time 30)",
+      "Bash(curl -s -L -X POST \"https://script.google.com/macros/s/AKfycbz2oz3hTdemYeN2hsFoTDAsu1lv7JCbNV2JPCxRm0kCVShmfe6qYmX_byHy6QxJ8YfF/exec\" -H \"Content-Type: application/json\" -d '{\"type\":\"add_rows\",\"rows\":[[\"2026-04-29T10:00:00.000Z\",\"\",\"1000\",\"テスト商品\",\"テスト\",1,1000,1000,1,\"\",\"現金\",\"\",\"\",\"\",\"\",\"test_debug_001\",\"端末1\"]]}' --max-time 30)",
+      "Bash(curl -s -X POST https://script.google.com/macros/s/AKfycbz2oz3hTdemYeN2hsFoTDAsu1lv7JCbNV2JPCxRm0kCVShmfe6qYmX_byHy6QxJ8YfF/exec -H 'Content-Type: text/plain' -d '{\"type\":\"add_rows\",\"rows\":[[\"2026-04-29T10:00:00.000Z\",\"\",\"1000\",\"テスト商品\",\"テスト\",1,1000,1000,1,\"\",\"現金\",\"\",\"\",\"\",\"\",\"test_debug_001\",\"端末1\"]]}' --max-time 30)",
+      "Bash(curl -s -X POST https://script.google.com/macros/s/AKfycbz2oz3hTdemYeN2hsFoTDAsu1lv7JCbNV2JPCxRm0kCVShmfe6qYmX_byHy6QxJ8YfF/exec -H 'Content-Type: text/plain' -d '{\"type\":\"add_rows\",\"rows\":[[\"2026-04-29T10:00:00.000Z\",\"\",\"500\",\"curl_test\",\"テスト\",1,500,500,1,\"\",\"現金\",\"\",\"\",\"\",\"\",\"curl_test_001\",\"test_terminal\"]]}' --max-time 30)",
+      "Bash(python3 -c \"import urllib.parse,json; d={'type':'add_rows','rows':[['2026-04-29T12:00:00.000Z','','1000','GET_test','テスト',1,1000,1000,1,'','現金','','','','','get_test_001','端末1']]}; print\\(urllib.parse.quote\\(json.dumps\\(d\\)\\)\\)\")",
+      "Bash(curl -sL 'https://script.google.com/macros/s/AKfycbz2oz3hTdemYeN2hsFoTDAsu1lv7JCbNV2JPCxRm0kCVShmfe6qYmX_byHy6QxJ8YfF/exec?d=__TRACKED_VAR__' --max-time 30)",
+      "Bash(curl -sL \"https://script.google.com/macros/s/AKfycbz2oz3hTdemYeN2hsFoTDAsu1lv7JCbNV2JPCxRm0kCVShmfe6qYmX_byHy6QxJ8YfF/exec?d=%7B%22type%22%3A%22add_rows%22%2C%22rows%22%3A%5B%5B%222026-04-29T12%3A00%3A00.000Z%22%2C%22%22%2C%221000%22%2C%22GET_test%22%2C%22test%22%2C1%2C1000%2C1000%2C1%2C%22%22%2C%22%22%2C%22%22%2C%22%22%2C%22%22%2C%22%22%2C%22get_test_001%22%2C%22%22%5D%5D%7D\" --max-time 30)",
+      "Bash(curl -s \"https://script.google.com/macros/s/AKfycbz2oz3hTdemYeN2hsFoTDAsu1lv7JCbNV2JPCxRm0kCVShmfe6qYmX_byHy6QxJ8YfF/exec?d=%7B%22type%22%3A%22add_rows%22%2C%22rows%22%3A%5B%5B%222026%2F04%2F28+\\(%E7%81%AB\\)+15%3A00%22%2C%22TEST_FIX_001%22%2C%22%E4%BF%AE%E6%AD%A3%E7%A2%BA%E8%AA%8D%E3%83%86%E3%82%B9%E3%83%88%22%2C1%2C500%2C500%2C%22%22%2C%22%E7%8F%BE%E9%87%91%22%2C%22%22%2C%22device_test%22%5D%5D%7D\")",
+      "Bash(curl -sL \"https://script.google.com/macros/s/AKfycbz2oz3hTdemYeN2hsFoTDAsu1lv7JCbNV2JPCxRm0kCVShmfe6qYmX_byHy6QxJ8YfF/exec?d=%7B%22type%22%3A%22add_rows%22%2C%22rows%22%3A%5B%5B%222026%2F04%2F28+\\(%E7%81%AB\\)+15%3A00%22%2C%22TEST_FIX_001%22%2C%22%E4%BF%AE%E6%AD%A3%E7%A2%BA%E8%AA%8D%E3%83%86%E3%82%B9%E3%83%88%22%2C1%2C500%2C500%2C%22%22%2C%22%E7%8F%BE%E9%87%91%22%2C%22%22%2C%22device_test%22%5D%5D%7D\")",
+      "Bash(curl -sL \"https://docs.google.com/spreadsheets/d/13AgulTcqyxRZLF9nejl2TJ3qqpLKlrFprlPX25fU-kg/export?format=csv\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\shuch\\OneDrive\\デスクトップ\\pos yoyaku projects\\pos reji\\pos main"
+    ]
+  }
+}
