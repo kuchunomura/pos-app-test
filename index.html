@@ -918,8 +918,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 353;
-const APP_BUILD_DATE = '2026/07/08 18:48';
+const APP_VERSION = 354;
+const APP_BUILD_DATE = '2026/07/08 18:59';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -2101,6 +2101,12 @@ function clearCart(){
 
 // ===== 保留（コンパクトなリスト・入れた順に1..N・最大30・空欄なし・繰り上げ）=====
 let _holdsExpanded=false;
+// 丸数字（①〜⑳＝U+2460、㉑〜㉟＝U+3251）。範囲外は「n.」
+function circledNum(n){
+  if(n>=1&&n<=20) return String.fromCharCode(0x2460+n-1);
+  if(n>=21&&n<=35) return String.fromCharCode(0x3251+n-21);
+  return n+'.';
+}
 function renderHoldTabs(){
   const c=document.getElementById('hold-tabs');c.innerHTML='';
   const N=holds.length;
@@ -2109,7 +2115,7 @@ function renderHoldTabs(){
     const h=holds[i];
     const btn=document.createElement('button');
     btn.className='hold-tab has-data'+(i===activeHoldIdx?' active':'');
-    btn.innerHTML='<span class="hold-dot"></span>'+(i+1)+(h.title?' '+h.title:'');
+    btn.innerHTML='<span class="hold-dot"></span><b style="font-size:13px">'+circledNum(i+1)+'</b>'+(h.title?' '+h.title:'');
     btn.onclick=()=>switchHold(i);
     let pressTimer;
     btn.addEventListener('touchstart',()=>{pressTimer=setTimeout(()=>editHoldTitle(i),600);});
