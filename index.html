@@ -918,8 +918,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 351;
-const APP_BUILD_DATE = '2026/07/08 17:30';
+const APP_VERSION = 352;
+const APP_BUILD_DATE = '2026/07/08 17:38';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -2236,8 +2236,8 @@ function warmYoyakuCache(){
   if(_yoyakuCache && (Date.now()-_yoyakuCacheTime)<180000) return;
   refreshYoyaku(false); // モーダルが閉じていてもキャッシュだけ更新
 }
-// 起動（リロード含む）時に裏で先読み。UIはブロックしない
-setTimeout(function(){ try{ warmYoyakuCache(); }catch(e){} }, 2000);
+// 起動（リロード含む）時に即・裏で先読み（2秒待たない）。UIはブロックしない
+setTimeout(function(){ try{ warmYoyakuCache(); }catch(e){} }, 0);
 
 // POS商品を名称で引く（レンタル用・空白/括弧ゆれを無視して緩く一致）
 function findPosItemByName(name){
@@ -2270,7 +2270,7 @@ function openYoyakuPicker(){
     renderYoyakuPicker(_yoyakuCache);          // キャッシュを即表示（待たない）
     if(Date.now()-_yoyakuCacheTime>180000) refreshYoyaku(false); // 3分超なら裏で更新
   } else {
-    c.innerHTML='<div style="text-align:center;color:#888;padding:1.5rem">読み込み中...</div>';
+    c.innerHTML='<div style="text-align:center;color:#888;padding:1.5rem">読み込み中…（初回のみ数秒かかります）</div>';
     refreshYoyaku(false);
   }
 }
@@ -2280,7 +2280,7 @@ function refreshYoyaku(force){
   var c=document.getElementById('yoyaku-modal-content');
   if(_yoyakuFetching) return;
   _yoyakuFetching=true;
-  if(force && c && !_yoyakuCache) c.innerHTML='<div style="text-align:center;color:#888;padding:1.5rem">読み込み中...</div>';
+  if(force && c && !_yoyakuCache) c.innerHTML='<div style="text-align:center;color:#888;padding:1.5rem">読み込み中…（初回のみ数秒かかります）</div>';
   fetchYoyakuReservations().then(function(data){
     _yoyakuFetching=false;
     if(!data){ if(c) c.innerHTML='<div style="color:#c00;padding:1rem">URL未設定</div>'; return; }
