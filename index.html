@@ -918,8 +918,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 348;
-const APP_BUILD_DATE = '2026/07/08 16:53';
+const APP_VERSION = 349;
+const APP_BUILD_DATE = '2026/07/08 17:20';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -2134,7 +2134,8 @@ function holdCart(){
 
 function confirmHold(){
   const title=document.getElementById('hold-title-input').value.trim()||new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
-  holds[activeHoldIdx]={title,cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount};
+  const _prev=holds[activeHoldIdx]||{};
+  holds[activeHoldIdx]={title,cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount,resId:_prev.resId,resTag:_prev.resTag||_reservationSaleTag||undefined};
   sv(KEYS.holds,holds);
   _pendingHoldTitle='';_reservationSaleTag='';
   // 保留後は新しいお客様用にクリア
@@ -2149,10 +2150,11 @@ function confirmHold(){
 
 function switchHold(idx){
   _reservationSaleTag='';_pendingHoldTitle='';
-  // 現在のカートを保存（中身があれば）
+  // 現在のカートを保存（中身があれば）。予約情報(resId/resTag)は維持
   if(cart.length){
-    const title=holds[activeHoldIdx]?.title||new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
-    holds[activeHoldIdx]={title,cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount};
+    const _p=holds[activeHoldIdx]||{};
+    const title=_p.title||new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+    holds[activeHoldIdx]={title,cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount,resId:_p.resId,resTag:_p.resTag};
   sv(KEYS.holds,holds);
   }
   activeHoldIdx=idx;
@@ -2161,6 +2163,8 @@ function switchHold(idx){
     cart=[...h.cart];
     selectedAttrs={...h.attrs};
     activeDiscount=h.discount||'';
+    _reservationSaleTag=h.resTag||''; // 予約由来なら決済メモ用タグを復元
+    _pendingHoldTitle=h.title||'';
     // 宿泊がカートに入っていれば空中ウォーク割引を再計算
     recalcCartPrices();
   } else {
@@ -2288,18 +2292,17 @@ function renderYoyakuPicker(data){
     if(o.memo){
       var full=esc(o.memo);
       if(o.memo.length<=50) memoHtml='<div style="font-size:11px;color:#666;margin-top:3px;white-space:pre-wrap">備考: '+full+'</div>';
-      else memoHtml='<details style="font-size:11px;color:#666;margin-top:3px"><summary style="cursor:pointer;color:#777;list-style:revert">備考: '+esc(o.memo.replace(/\s+/g,' ').slice(0,30))+'…</summary><div style="white-space:pre-wrap;margin-top:3px">'+full+'</div></details>';
+      else memoHtml='<details onclick="event.stopPropagation()" style="font-size:11px;color:#666;margin-top:3px"><summary style="cursor:pointer;color:#777;list-style:revert">備考: '+esc(o.memo.replace(/\s+/g,' ').slice(0,30))+'…</summary><div style="white-space:pre-wrap;margin-top:3px">'+full+'</div></details>';
     }
     var idAttr=String(x.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     var onload="loadReservationToCart('"+x.type+"','"+idAttr+"')";
-    html+='<div style="border:1px solid var(--border);border-radius:8px;background:#fff;margin-bottom:6px;padding:9px 11px">'+
-      '<div onclick="'+onload+'" style="cursor:pointer">'+
-        '<div style="font-size:14px;font-weight:700;color:#333">'+esc(o.name||'（無名）')+' <span style="font-size:11px;color:#999;font-weight:400">'+tag+'</span></div>'+
+    var held=holds.some(function(h){return h&&h.resId===(x.type+':'+x.id);});
+    var heldBadge=held?' <span style="font-size:10px;font-weight:700;color:#c07000;background:#fff3e0;border:1px solid #e0b070;border-radius:8px;padding:0 6px">保留中</span>':'';
+    html+='<div onclick="'+onload+'" style="border:1px solid '+(held?'#e0b070':'var(--border)')+';border-radius:8px;background:'+(held?'#fffaf2':'#fff')+';margin-bottom:6px;padding:9px 11px;cursor:pointer">'+
+        '<div style="font-size:14px;font-weight:700;color:#333">'+esc(o.name||'（無名）')+heldBadge+' <span style="font-size:11px;color:#999;font-weight:400">'+tag+'</span></div>'+
         '<div style="font-size:12px;color:#666">'+esc(label)+'　'+esc(sub)+'</div>'+
         rentalLine+
-      '</div>'+
-      memoHtml+
-      '<button onclick="'+onload+'" style="margin-top:6px;padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #7a1030;color:#fff;background:#7a1030;border-radius:8px;cursor:pointer;font-family:inherit">▶ 会計に読込</button>'+
+        memoHtml+
     '</div>';
   });
   c.innerHTML=html;
@@ -2308,11 +2311,17 @@ function renderYoyakuPicker(data){
 // 現在カートに未会計があれば現行スロットへ保存し空きスロットへ移動（保留機構を流用）
 function prepareSlotForReservation(){
   if(cart.length){
-    var title=(holds[activeHoldIdx]&&holds[activeHoldIdx].title)||new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
-    holds[activeHoldIdx]={title:title,cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount};
+    // 作業中カートを現行スロットへ退避（予約情報は維持）し、空きスロットへ移動
+    var _p=holds[activeHoldIdx]||{};
+    var title=_p.title||new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+    holds[activeHoldIdx]={title:title,cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount,resId:_p.resId,resTag:_p.resTag};
     var next=holds.findIndex(function(h,i){return h===null&&i!==activeHoldIdx;});
     if(next>=0) activeHoldIdx=next;
     sv(KEYS.holds,holds);
+  } else if(holds[activeHoldIdx]){
+    // 作業カートは空だが現行スロットに別データ→空きスロットへ
+    var n2=holds.findIndex(function(h){return h===null;});
+    if(n2>=0) activeHoldIdx=n2;
   }
 }
 
@@ -2336,6 +2345,16 @@ function loadReservationToCart(type,id){
   var data=_yoyakuCache; if(!data){ showToast('⚠ 再取得してください','#c00'); return; }
   var o=(type==='day'?data.reservations:data.stays).find(function(x){return String(x.id)===String(id);});
   if(!o){ showToast('⚠ 予約が見つかりません','#c00'); return; }
+  var resId=type+':'+id;
+  // 同じ予約が既に保留にあれば重複作成せず、その保留へ切替
+  var existIdx=holds.findIndex(function(h){return h&&h.resId===resId;});
+  if(existIdx>=0){
+    document.getElementById('yoyaku-modal').classList.remove('open');
+    switchHold(existIdx);
+    switchTab('pos');
+    showToast('既にこの予約は保留にあります：'+(o.name||''),'#c07000');
+    return;
+  }
   _pendingHoldTitle=o.name||''; // 保留に入れる時の既定名を予約者名に
   // 決済売上メモへ付与する予約タグ（ダブり確認用）
   var _rdate=(o.date||o.checkin||'');
@@ -2366,6 +2385,9 @@ function loadReservationToCart(type,id){
     addToCart(rit,rcat); var rl=cart[cart.length-1]; if(rl) rl.qty=Math.max(1,parseInt(rn.qty)||1);
   });
   recalcCartPrices();
+  // 予約者名つきの保留スロットとして保存（タブに名前表示＋重複防止のresId付与）
+  holds[activeHoldIdx]={title:(o.name||'予約'),cart:cart.map(function(c){return Object.assign({},c);}),attrs:Object.assign({},selectedAttrs),discount:activeDiscount,resId:resId,resTag:_reservationSaleTag};
+  sv(KEYS.holds,holds);
   document.getElementById('yoyaku-modal').classList.remove('open');
   switchTab('pos');
   renderCart();renderPOS();renderAttrs();renderDiscountBar();renderHoldTabs();
