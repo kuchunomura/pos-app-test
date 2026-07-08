@@ -868,7 +868,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
     <h3>📅 予約から会計を起票</h3>
     <div id="yoyaku-modal-content" style="margin:8px 0;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;"></div>
     <div class="modal-btns">
-      <button onclick="openYoyakuPicker()">🔄 再取得</button>
+      <button onclick="refreshYoyaku(true)">🔄 再取得</button>
       <button onclick="document.getElementById('yoyaku-modal').classList.remove('open')">閉じる</button>
     </div>
   </div>
@@ -918,8 +918,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 346;
-const APP_BUILD_DATE = '2026/07/08 16:24';
+const APP_VERSION = 347;
+const APP_BUILD_DATE = '2026/07/08 16:39';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -2125,8 +2125,8 @@ function editHoldTitle(idx){
 
 function holdCart(){
   if(!cart.length){showToast('⚠ カートが空です','#c00');return;}
-  // 既存の名前があれば引き継ぐ
-  const existingTitle=holds[activeHoldIdx]?.title||'';
+  // 既存の名前、または予約読込時の予約者名を引き継ぐ
+  const existingTitle=(holds[activeHoldIdx]?.title)||_pendingHoldTitle||'';
   document.getElementById('hold-title-input').value=existingTitle;
   document.getElementById('hold-modal').classList.add('open');
 }
@@ -2135,6 +2135,7 @@ function confirmHold(){
   const title=document.getElementById('hold-title-input').value.trim()||new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
   holds[activeHoldIdx]={title,cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount};
   sv(KEYS.holds,holds);
+  _pendingHoldTitle='';
   // 保留後は新しいお客様用にクリア
   cart=[];selectedAttrs={age:[],nationality:[]};activeDiscount='';activeMura=false;
   // 次の空きスロットへ
@@ -2176,16 +2177,20 @@ const YOYAKU_STAY_GROUP_MAP={'ツリーハウス':'i_st_th','透明ドーム':'i
 // 宿泊棟ID→表示名（POS商品名を流用できない棟未選択時のフォールバック用）
 // レンタル名称ゆれ吸収（yoyaku名→POS名）。基本は名称一致
 const YOYAKU_RENTAL_ALIAS={};
-let _yoyakuCache=null;
+let _yoyakuCache=null;      // 取得結果のキャッシュ（毎回取得しない）
+let _yoyakuCacheTime=0;     // キャッシュ取得時刻
+let _yoyakuFetching=false;  // 二重取得ガード
+let _pendingHoldTitle='';   // 予約読込時に保留の既定名へ引き継ぐ
 
-function saveYoyakuGas(){ var el=document.getElementById('pos-yoyaku-gas-url'); if(!el)return; sv(YOYAKU_GAS_KEY,el.value.trim()); showToast('✓ yoyaku URLを保存しました'); }
+function saveYoyakuGas(){ var el=document.getElementById('pos-yoyaku-gas-url'); if(!el)return; sv(YOYAKU_GAS_KEY,el.value.trim()); _yoyakuCache=null; showToast('✓ yoyaku URLを保存しました'); }
 function initYoyakuGasField(){ var el=document.getElementById('pos-yoyaku-gas-url'); if(el) el.value=ld(YOYAKU_GAS_KEY)||''; }
 
 async function fetchYoyakuReservations(){
   var url=ld(YOYAKU_GAS_KEY)||'';
   if(!url) return null;
   var res=await fetch(url,{method:'GET',redirect:'follow'});
-  var json=await res.json();
+  var txt=await res.text();
+  var json; try{ json=JSON.parse(txt); }catch(e){ throw new Error('応答が不正（通信混雑/URL確認）'); }
   if(json.status!=='ok') throw new Error(json.message||'yoyaku取得失敗');
   return {reservations:json.reservations||[], stays:json.stays||[]};
 }
@@ -2215,13 +2220,33 @@ function applyYoyakuDiscountContext(o,isStay){
 function openYoyakuPicker(){
   var m=document.getElementById('yoyaku-modal');
   var c=document.getElementById('yoyaku-modal-content');
-  if(!ld(YOYAKU_GAS_KEY)){ c.innerHTML='<div style="color:#c00;padding:1rem;line-height:1.7">設定タブの「📅 予約連携（yoyaku）」でGAS URLを入力してください。</div>'; m.classList.add('open'); return; }
-  c.innerHTML='<div style="text-align:center;color:#888;padding:1.5rem">読み込み中...</div>';
   m.classList.add('open');
+  if(!ld(YOYAKU_GAS_KEY)){ c.innerHTML='<div style="color:#c00;padding:1rem;line-height:1.7">設定タブの「📅 予約連携（yoyaku）」でGAS URLを入力してください。</div>'; return; }
+  if(_yoyakuCache){
+    renderYoyakuPicker(_yoyakuCache);          // キャッシュを即表示（待たない）
+    if(Date.now()-_yoyakuCacheTime>180000) refreshYoyaku(false); // 3分超なら裏で更新
+  } else {
+    c.innerHTML='<div style="text-align:center;color:#888;padding:1.5rem">読み込み中...</div>';
+    refreshYoyaku(false);
+  }
+}
+
+// 予約を取得。force=trueは🔄再取得ボタン用。取得中は二重に走らせない
+function refreshYoyaku(force){
+  var c=document.getElementById('yoyaku-modal-content');
+  if(_yoyakuFetching) return;
+  _yoyakuFetching=true;
+  if(force && c && !_yoyakuCache) c.innerHTML='<div style="text-align:center;color:#888;padding:1.5rem">読み込み中...</div>';
   fetchYoyakuReservations().then(function(data){
-    if(!data){ c.innerHTML='<div style="color:#c00;padding:1rem">URL未設定</div>'; return; }
-    _yoyakuCache=data; renderYoyakuPicker(data);
-  }).catch(function(e){ c.innerHTML='<div style="color:#c00;padding:1rem">取得エラー: '+e.message+'</div>'; });
+    _yoyakuFetching=false;
+    if(!data){ if(c) c.innerHTML='<div style="color:#c00;padding:1rem">URL未設定</div>'; return; }
+    _yoyakuCache=data; _yoyakuCacheTime=Date.now();
+    if(document.getElementById('yoyaku-modal').classList.contains('open')) renderYoyakuPicker(data);
+  }).catch(function(e){
+    _yoyakuFetching=false;
+    if(_yoyakuCache){ showToast('⚠ 最新取得に失敗（前回分を表示中）','#c07000'); }   // キャッシュは消さない
+    else if(c){ c.innerHTML='<div style="color:#c00;padding:1rem;line-height:1.7">取得エラー: '+e.message+'<br>「🔄 再取得」を押してください。</div>'; }
+  });
 }
 
 function renderYoyakuPicker(data){
@@ -2238,10 +2263,12 @@ function renderYoyakuPicker(data){
   rows.sort(function(a,b){ return a.date.localeCompare(b.date)||String((a.o.startTime||a.o.checkin||'')).localeCompare(String(b.o.startTime||b.o.checkin||'')); });
   if(!rows.length){ c.innerHTML='<div style="color:#888;padding:1rem;text-align:center">当日・翌日の予約はありません</div>'; return; }
   var esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
+  var wk=['日','月','火','水','木','金','土'];
+  var fmtHead=function(ds){ var p=ds.split('-'); var w=wk[new Date(+p[0],+p[1]-1,+p[2]).getDay()]; return (+p[1])+'/'+(+p[2])+'（'+w+'）'; };
   var html='', lastDate='';
   rows.forEach(function(x){
     var o=x.o;
-    if(x.date!==lastDate){ lastDate=x.date; html+='<div style="font-weight:700;font-size:13px;color:#555;margin:10px 0 4px">'+x.date+(x.date===today?'（本日）':'（翌日）')+'</div>'; }
+    if(x.date!==lastDate){ lastDate=x.date; html+='<div style="font-weight:700;font-size:14px;color:#333;margin:14px 0 6px;padding-bottom:4px;border-bottom:2px solid #cfcfcf">'+fmtHead(x.date)+' '+(x.date===today?'（本日）':'（翌日）')+'</div>'; }
     var label,sub;
     if(x.type==='day'){
       var fac={walk:'空中ウォーク',tree:'ツリーハウス昼',bbq:'BBQ'}[o.facility]||o.facility;
@@ -2250,16 +2277,27 @@ function renderYoyakuPicker(data){
     } else {
       var sit=items.find(function(it){return it.id==='i_'+o.facility;});
       var facName=sit?sit.name:(o.facGroup||'棟未選択');
-      label='宿泊 '+facName; sub=(o.nights||1)+'泊 '+(o.ninzu||'')+'名'+((o.petCount||0)>0?' 🐾ペット'+o.petCount:'');
+      label='宿泊 '+facName; sub=(o.nights||1)+'泊 '+(o.ninzu||'')+'名'+((o.petCount||0)>0?'　ペット'+o.petCount:'');
     }
     var tag=o.source?('【'+o.source+'】'):((/年間パス/.test(o.memo||'')?'【年間パス】':'')+(o.mura?'【村内】':''));
-    var rentalLine=(o.rental&&o.rental.length)?'<div style="font-size:11px;color:#7a1030;margin-top:2px">🧺 '+esc(o.rental.map(function(r){return r.name+'×'+(r.qty||1);}).join('、'))+'</div>':'';
-    var memoLine=o.memo?'<div style="font-size:11px;color:#999;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📝 '+esc(o.memo.replace(/\s+/g,' ').slice(0,40))+'</div>':'';
-    html+='<button onclick="loadReservationToCart(\''+x.type+'\',\''+String(x.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" style="display:block;width:100%;text-align:left;padding:9px 11px;margin-bottom:5px;border:1px solid var(--border);border-radius:8px;background:#fff;font-family:inherit;cursor:pointer;">'+
-      '<div style="font-size:14px;font-weight:700;color:#333">'+esc(o.name||'（無名）')+' <span style="font-size:11px;color:#999;font-weight:400">'+tag+'</span></div>'+
-      '<div style="font-size:12px;color:#666">'+esc(label)+'　'+esc(sub)+'</div>'+
-      rentalLine+memoLine+
-    '</button>';
+    var rentalLine=(o.rental&&o.rental.length)?'<div style="font-size:11px;color:#7a1030;margin-top:2px">レンタル: '+esc(o.rental.map(function(r){return r.name+'×'+(r.qty||1);}).join('、'))+'</div>':'';
+    var memoHtml='';
+    if(o.memo){
+      var full=esc(o.memo);
+      if(o.memo.length<=50) memoHtml='<div style="font-size:11px;color:#666;margin-top:3px;white-space:pre-wrap">備考: '+full+'</div>';
+      else memoHtml='<details style="font-size:11px;color:#666;margin-top:3px"><summary style="cursor:pointer;color:#777;list-style:revert">備考: '+esc(o.memo.replace(/\s+/g,' ').slice(0,30))+'…</summary><div style="white-space:pre-wrap;margin-top:3px">'+full+'</div></details>';
+    }
+    var idAttr=String(x.id).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    var onload="loadReservationToCart('"+x.type+"','"+idAttr+"')";
+    html+='<div style="border:1px solid var(--border);border-radius:8px;background:#fff;margin-bottom:6px;padding:9px 11px">'+
+      '<div onclick="'+onload+'" style="cursor:pointer">'+
+        '<div style="font-size:14px;font-weight:700;color:#333">'+esc(o.name||'（無名）')+' <span style="font-size:11px;color:#999;font-weight:400">'+tag+'</span></div>'+
+        '<div style="font-size:12px;color:#666">'+esc(label)+'　'+esc(sub)+'</div>'+
+        rentalLine+
+      '</div>'+
+      memoHtml+
+      '<button onclick="'+onload+'" style="margin-top:6px;padding:5px 12px;font-size:12px;font-weight:700;border:1px solid #7a1030;color:#fff;background:#7a1030;border-radius:8px;cursor:pointer;font-family:inherit">▶ 会計に読込</button>'+
+    '</div>';
   });
   c.innerHTML=html;
 }
@@ -2295,6 +2333,7 @@ function loadReservationToCart(type,id){
   var data=_yoyakuCache; if(!data){ showToast('⚠ 再取得してください','#c00'); return; }
   var o=(type==='day'?data.reservations:data.stays).find(function(x){return String(x.id)===String(id);});
   if(!o){ showToast('⚠ 予約が見つかりません','#c00'); return; }
+  _pendingHoldTitle=o.name||''; // 保留に入れる時の既定名を予約者名に
   prepareSlotForReservation();
   cart=[];
   applyYoyakuDiscountContext(o,type==='stay');
