@@ -918,8 +918,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 349;
-const APP_BUILD_DATE = '2026/07/08 17:20';
+const APP_VERSION = 350;
+const APP_BUILD_DATE = '2026/07/08 17:24';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -2095,26 +2095,44 @@ function clearCart(){
 }
 
 // ===== 保留 =====
+let _holdRow2Open=false;
 function renderHoldTabs(){
   const c=document.getElementById('hold-tabs');c.innerHTML='';
-  const usedCount=holds.filter(h=>h!==null).length;
-  const rows=usedCount<=5?1:2;
-  for(let row=0;row<rows;row++){
-    const rowDiv=document.createElement('div');rowDiv.className='hold-tabs-row';
-    for(let col=0;col<5;col++){
-      const i=row*5+col;
-      const h=holds[i];
-      const btn=document.createElement('button');
-      btn.className='hold-tab'+(i===activeHoldIdx?' active':'')+(h?' has-data':'');
-      btn.innerHTML=(h?'<span class="hold-dot"></span>':'')+(h?h.title:(i+1)+'');
-      btn.onclick=()=>switchHold(i);
-      // 長押しで名前編集
-      let pressTimer;
-      btn.addEventListener('touchstart',()=>{pressTimer=setTimeout(()=>editHoldTitle(i),600);});
-      btn.addEventListener('touchend',()=>clearTimeout(pressTimer));
-      rowDiv.appendChild(btn);
+  const mkBtn=(i)=>{
+    const h=holds[i];
+    const btn=document.createElement('button');
+    btn.className='hold-tab'+(i===activeHoldIdx?' active':'')+(h?' has-data':'');
+    btn.innerHTML=(h?'<span class="hold-dot"></span>':'')+(h?h.title:(i+1)+'');
+    btn.onclick=()=>switchHold(i);
+    // 長押しで名前編集
+    let pressTimer;
+    btn.addEventListener('touchstart',()=>{pressTimer=setTimeout(()=>editHoldTitle(i),600);});
+    btn.addEventListener('touchend',()=>clearTimeout(pressTimer));
+    return btn;
+  };
+  // 1段目（1〜5）は常時表示
+  const row1=document.createElement('div');row1.className='hold-tabs-row';
+  for(let col=0;col<5;col++) row1.appendChild(mkBtn(col));
+  c.appendChild(row1);
+  // 2段目（6〜10）は使用中があれば折り畳み（5件超の保留を隠す）
+  const row2Used=holds.slice(5,10).filter(h=>h!==null).length;
+  const forced=activeHoldIdx>=5; // 6〜10を選択中は常に開く
+  if(row2Used>0 || forced){
+    const open=_holdRow2Open||forced;
+    if(open){
+      const row2=document.createElement('div');row2.className='hold-tabs-row';
+      for(let col=0;col<5;col++) row2.appendChild(mkBtn(5+col));
+      c.appendChild(row2);
     }
-    c.appendChild(rowDiv);
+    if(!forced){
+      const tg=document.createElement('button');
+      tg.className='hold-tab';
+      tg.style.cssText='flex:1;font-size:10px;color:var(--text2);border-top:1px dashed var(--border)';
+      tg.textContent=open?'▲ 保留6〜10を閉じる':('▼ 保留6〜10を開く（'+row2Used+'件）');
+      tg.onclick=()=>{ _holdRow2Open=!_holdRow2Open; renderHoldTabs(); };
+      const tr=document.createElement('div');tr.className='hold-tabs-row';tr.appendChild(tg);
+      c.appendChild(tr);
+    }
   }
 }
 
@@ -2305,6 +2323,10 @@ function renderYoyakuPicker(data){
         memoHtml+
     '</div>';
   });
+  html+='<div style="margin-top:12px;padding:9px 11px;background:#f5f5f5;border-radius:8px;font-size:11px;color:#666;line-height:1.8">'+
+    '・カートで数量や商品を変更したら「⏸ 保留」で保存できます。<br>'+
+    '・カートをクリアしても予約は消えません（この画面からいつでも読み込み直せます）。'+
+  '</div>';
   c.innerHTML=html;
 }
 
