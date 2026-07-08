@@ -918,8 +918,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 350;
-const APP_BUILD_DATE = '2026/07/08 17:24';
+const APP_VERSION = 351;
+const APP_BUILD_DATE = '2026/07/08 17:30';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -1265,6 +1265,7 @@ function switchTab(t) {
   if (t==='settings-pos') { renderSettings(); initDeviceNameField(); initVersionInfo(); initYoyakuGasField(); }
   if (t==='agreement') loadAgreementText();
   if (t==='timer') initTimer();
+  if (t==='pos') warmYoyakuCache(); // 予約を裏で先読み（空/3分超のみ）
 }
 
 // ===== カテゴリー =====
@@ -2213,12 +2214,30 @@ function initYoyakuGasField(){ var el=document.getElementById('pos-yoyaku-gas-ur
 async function fetchYoyakuReservations(){
   var url=ld(YOYAKU_GAS_KEY)||'';
   if(!url) return null;
-  var res=await fetch(url,{method:'GET',redirect:'follow'});
-  var txt=await res.text();
-  var json; try{ json=JSON.parse(txt); }catch(e){ throw new Error('応答が不正（通信混雑/URL確認）'); }
-  if(json.status!=='ok') throw new Error(json.message||'yoyaku取得失敗');
-  return {reservations:json.reservations||[], stays:json.stays||[]};
+  // GASのコールドスタートで初回はHTML/タイムアウトが返ることがあるため最大3回リトライ
+  for(var attempt=0; attempt<3; attempt++){
+    try{
+      var res=await fetch(url,{method:'GET',redirect:'follow'});
+      var txt=await res.text();
+      var json=JSON.parse(txt); // HTMLならここで例外→リトライ
+      if(json.status!=='ok') throw new Error(json.message||'yoyaku取得失敗');
+      return {reservations:json.reservations||[], stays:json.stays||[]};
+    }catch(e){
+      if(attempt<2) await new Promise(function(r){ setTimeout(r, 700*(attempt+1)); }); // 0.7s,1.4s待って再試行
+    }
+  }
+  throw new Error('応答が不正（通信混雑/URL確認）');
 }
+
+// 裏で予約を先読みしてキャッシュを温める（起動時・POSタブ表示時）。空/3分超のときだけ取得
+function warmYoyakuCache(){
+  if(!ld(YOYAKU_GAS_KEY)) return;
+  if(_yoyakuFetching) return;
+  if(_yoyakuCache && (Date.now()-_yoyakuCacheTime)<180000) return;
+  refreshYoyaku(false); // モーダルが閉じていてもキャッシュだけ更新
+}
+// 起動（リロード含む）時に裏で先読み。UIはブロックしない
+setTimeout(function(){ try{ warmYoyakuCache(); }catch(e){} }, 2000);
 
 // POS商品を名称で引く（レンタル用・空白/括弧ゆれを無視して緩く一致）
 function findPosItemByName(name){
