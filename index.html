@@ -863,7 +863,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 </div>
 
 <!-- yoyaku予約ピッカー -->
-<div class="modal-overlay" id="yoyaku-modal">
+<div class="modal-overlay" id="yoyaku-modal" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal" style="max-width:440px;max-height:82vh;display:flex;flex-direction:column;">
     <h3>📅 予約から会計を起票</h3>
     <div id="yoyaku-modal-content" style="margin:8px 0;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;"></div>
@@ -918,8 +918,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 352;
-const APP_BUILD_DATE = '2026/07/08 17:38';
+const APP_VERSION = 353;
+const APP_BUILD_DATE = '2026/07/08 18:48';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -1231,9 +1231,10 @@ let TIMER_FACS = [
 let timerFacId = 'walk';
 let timerCourse = 55;
 let timerResults = [];
-// 保留データ（最大4）
-let holds = ld('pos_holds') || [null,null,null,null,null,null,null,null,null,null];
-let activeHoldIdx = 0; // 現在表示中の保留スロット
+// 保留データ（コンパクトなリスト・最大30件・入れた順に1..N・空欄なし）
+const MAX_HOLDS = 30;
+let holds = (ld('pos_holds')||[]).filter(function(h){return h;}); // 旧nullスロットを詰めて移行
+let activeHoldIdx = -1; // 編集中の保留index（-1＝新規カート）
 
 // ===== タブ切替 =====
 function switchTab(t) {
@@ -2070,12 +2071,16 @@ function closeCheckoutSummary(){
 function chgQty(idx,d){cart[idx].qty=Math.max(1,cart[idx].qty+d);renderCart();}
 function toggleMuraOff(idx){cart[idx].muraOff=!cart[idx].muraOff;recalcCartPrices();renderCart();}
 function removeCart(idx){cart.splice(idx,1);recalcCartPrices();renderPOS();renderCart();}
+// 編集中の保留をリストから除去して詰める（決済/クリア時）。-1なら何もしない
+function removeActiveHold(){
+  if(activeHoldIdx>=0 && activeHoldIdx<holds.length){ holds.splice(activeHoldIdx,1); sv(KEYS.holds,holds); }
+  activeHoldIdx=-1;
+}
 function clearCart(){
   _reservationSaleTag='';_pendingHoldTitle='';
   if(editingSaleId){
     // 修正モード中はeditingSaleIdを保持（タブ切り替え時に削除確認できるように）
-    holds[activeHoldIdx]=null;
-    sv(KEYS.holds,holds);
+    removeActiveHold();
     cart=[];selectedAttrs={age:[],nationality:[]};activeDiscount='';activeMura=false;
     attrVisible=false;
     var ai2=document.getElementById('attr-rows-inner'),ab2=document.getElementById('toggle-attr-btn');
@@ -2085,8 +2090,7 @@ function clearCart(){
     return;
   }
   editingSaleId=null;
-  holds[activeHoldIdx]=null;
-  sv(KEYS.holds,holds);
+  removeActiveHold();
   cart=[];selectedAttrs={age:[],nationality:[]};activeDiscount='';activeMura=false;
   attrVisible=false;
   var ai=document.getElementById('attr-rows-inner'),ab=document.getElementById('toggle-attr-btn');
@@ -2095,100 +2099,103 @@ function clearCart(){
   renderCart();renderAttrs();renderDiscountBar();renderPOS();renderHoldTabs();
 }
 
-// ===== 保留 =====
-let _holdRow2Open=false;
+// ===== 保留（コンパクトなリスト・入れた順に1..N・最大30・空欄なし・繰り上げ）=====
+let _holdsExpanded=false;
 function renderHoldTabs(){
   const c=document.getElementById('hold-tabs');c.innerHTML='';
+  const N=holds.length;
+  if(N===0) return; // 保留なし＝何も出さない（すっきり）
   const mkBtn=(i)=>{
     const h=holds[i];
     const btn=document.createElement('button');
-    btn.className='hold-tab'+(i===activeHoldIdx?' active':'')+(h?' has-data':'');
-    btn.innerHTML=(h?'<span class="hold-dot"></span>':'')+(h?h.title:(i+1)+'');
+    btn.className='hold-tab has-data'+(i===activeHoldIdx?' active':'');
+    btn.innerHTML='<span class="hold-dot"></span>'+(i+1)+(h.title?' '+h.title:'');
     btn.onclick=()=>switchHold(i);
-    // 長押しで名前編集
     let pressTimer;
     btn.addEventListener('touchstart',()=>{pressTimer=setTimeout(()=>editHoldTitle(i),600);});
     btn.addEventListener('touchend',()=>clearTimeout(pressTimer));
     return btn;
   };
-  // 1段目（1〜5）は常時表示
-  const row1=document.createElement('div');row1.className='hold-tabs-row';
-  for(let col=0;col<5;col++) row1.appendChild(mkBtn(col));
-  c.appendChild(row1);
-  // 2段目（6〜10）は使用中があれば折り畳み（5件超の保留を隠す）
-  const row2Used=holds.slice(5,10).filter(h=>h!==null).length;
-  const forced=activeHoldIdx>=5; // 6〜10を選択中は常に開く
-  if(row2Used>0 || forced){
-    const open=_holdRow2Open||forced;
-    if(open){
-      const row2=document.createElement('div');row2.className='hold-tabs-row';
-      for(let col=0;col<5;col++) row2.appendChild(mkBtn(5+col));
-      c.appendChild(row2);
+  const perRow=5, totalRows=Math.ceil(N/perRow);
+  const activeRow=activeHoldIdx>=0?Math.floor(activeHoldIdx/perRow):-1;
+  const forceExpand=activeRow>=1;                    // 6件目以降を選択中は自動で全表示
+  const showAll=_holdsExpanded||forceExpand||totalRows<=1;
+  const rowsToShow=showAll?totalRows:1;
+  for(let r=0;r<rowsToShow;r++){
+    const rowDiv=document.createElement('div');rowDiv.className='hold-tabs-row';
+    for(let col=0;col<perRow;col++){
+      const i=r*perRow+col;
+      if(i<N) rowDiv.appendChild(mkBtn(i));
+      else { const sp=document.createElement('div'); sp.style.flex='1'; rowDiv.appendChild(sp); } // 端数は透明で埋める
     }
-    if(!forced){
-      const tg=document.createElement('button');
-      tg.className='hold-tab';
-      tg.style.cssText='flex:1;font-size:10px;color:var(--text2);border-top:1px dashed var(--border)';
-      tg.textContent=open?'▲ 保留6〜10を閉じる':('▼ 保留6〜10を開く（'+row2Used+'件）');
-      tg.onclick=()=>{ _holdRow2Open=!_holdRow2Open; renderHoldTabs(); };
-      const tr=document.createElement('div');tr.className='hold-tabs-row';tr.appendChild(tg);
-      c.appendChild(tr);
-    }
+    c.appendChild(rowDiv);
+  }
+  if(totalRows>1 && !forceExpand){
+    const tg=document.createElement('button');tg.className='hold-tab';
+    tg.style.cssText='flex:1;font-size:10px;color:var(--text2);border-top:1px dashed var(--border)';
+    tg.textContent=showAll?'▲ 閉じる':('▼ 保留をすべて表示（'+N+'件）');
+    tg.onclick=()=>{ _holdsExpanded=!_holdsExpanded; renderHoldTabs(); };
+    const tr=document.createElement('div');tr.className='hold-tabs-row';tr.appendChild(tg);c.appendChild(tr);
   }
 }
 
 function editHoldTitle(idx){
   const h=holds[idx]; if(!h) return;
   const newTitle=prompt('保留名を変更',h.title||'');
-  if(newTitle!==null){ holds[idx].title=newTitle||h.title; renderHoldTabs(); }
+  if(newTitle!==null){ holds[idx].title=newTitle||h.title; sv(KEYS.holds,holds); renderHoldTabs(); }
+}
+
+// 現在の作業カートを保留へ退避（編集中なら上書き、新規なら末尾に追加）。中身がなければ何もしない
+function parkCurrentCart(){
+  if(!cart.length) return;
+  if(activeHoldIdx>=0 && holds[activeHoldIdx]){
+    const p=holds[activeHoldIdx];
+    holds[activeHoldIdx]={title:p.title,cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount,resId:p.resId,resTag:p.resTag};
+  } else if(holds.length<MAX_HOLDS){
+    holds.push({title:(_pendingHoldTitle||new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})),cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount,resTag:_reservationSaleTag||undefined});
+  }
+  sv(KEYS.holds,holds);
 }
 
 function holdCart(){
   if(!cart.length){showToast('⚠ カートが空です','#c00');return;}
-  // 既存の名前、または予約読込時の予約者名を引き継ぐ
-  const existingTitle=(holds[activeHoldIdx]?.title)||_pendingHoldTitle||'';
+  if(activeHoldIdx<0 && holds.length>=MAX_HOLDS){ showToast('⚠ 保留は最大'+MAX_HOLDS+'件です','#c00'); return; }
+  const existingTitle=(activeHoldIdx>=0&&holds[activeHoldIdx]?holds[activeHoldIdx].title:'')||_pendingHoldTitle||'';
   document.getElementById('hold-title-input').value=existingTitle;
   document.getElementById('hold-modal').classList.add('open');
 }
 
 function confirmHold(){
   const title=document.getElementById('hold-title-input').value.trim()||new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
-  const _prev=holds[activeHoldIdx]||{};
-  holds[activeHoldIdx]={title,cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount,resId:_prev.resId,resTag:_prev.resTag||_reservationSaleTag||undefined};
+  if(activeHoldIdx>=0 && holds[activeHoldIdx]){
+    const p=holds[activeHoldIdx];
+    holds[activeHoldIdx]={title,cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount,resId:p.resId,resTag:p.resTag||_reservationSaleTag||undefined};
+  } else {
+    if(holds.length>=MAX_HOLDS){ showToast('⚠ 保留は最大'+MAX_HOLDS+'件です','#c00'); return; }
+    holds.push({title,cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount,resTag:_reservationSaleTag||undefined});
+  }
   sv(KEYS.holds,holds);
   _pendingHoldTitle='';_reservationSaleTag='';
   // 保留後は新しいお客様用にクリア
   cart=[];selectedAttrs={age:[],nationality:[]};activeDiscount='';activeMura=false;
-  // 次の空きスロットへ
-  const next=holds.findIndex((h,i)=>h===null&&i!==activeHoldIdx);
-  if(next!==-1)activeHoldIdx=next;
+  activeHoldIdx=-1;
   document.getElementById('hold-modal').classList.remove('open');
   renderCart();renderAttrs();renderDiscountBar();renderPOS();renderHoldTabs();
   showToast('✓ 保留しました');
 }
 
 function switchHold(idx){
+  if(idx<0||idx>=holds.length) return;
+  parkCurrentCart();                 // 現在の作業カートを退避（新規なら末尾へ追加）
   _reservationSaleTag='';_pendingHoldTitle='';
-  // 現在のカートを保存（中身があれば）。予約情報(resId/resTag)は維持
-  if(cart.length){
-    const _p=holds[activeHoldIdx]||{};
-    const title=_p.title||new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
-    holds[activeHoldIdx]={title,cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount,resId:_p.resId,resTag:_p.resTag};
-  sv(KEYS.holds,holds);
-  }
   activeHoldIdx=idx;
   const h=holds[idx];
-  if(h){
-    cart=[...h.cart];
-    selectedAttrs={...h.attrs};
-    activeDiscount=h.discount||'';
-    _reservationSaleTag=h.resTag||''; // 予約由来なら決済メモ用タグを復元
-    _pendingHoldTitle=h.title||'';
-    // 宿泊がカートに入っていれば空中ウォーク割引を再計算
-    recalcCartPrices();
-  } else {
-    cart=[];selectedAttrs={age:[],nationality:[]};activeDiscount='';activeMura=false;
-  }
+  cart=[...h.cart];
+  selectedAttrs={...h.attrs};
+  activeDiscount=h.discount||'';
+  _reservationSaleTag=h.resTag||''; // 予約由来なら決済メモ用タグを復元
+  _pendingHoldTitle=h.title||'';
+  recalcCartPrices();
   renderCart();renderAttrs();renderDiscountBar();renderPOS();renderHoldTabs();
 }
 
@@ -2349,23 +2356,6 @@ function renderYoyakuPicker(data){
   c.innerHTML=html;
 }
 
-// 現在カートに未会計があれば現行スロットへ保存し空きスロットへ移動（保留機構を流用）
-function prepareSlotForReservation(){
-  if(cart.length){
-    // 作業中カートを現行スロットへ退避（予約情報は維持）し、空きスロットへ移動
-    var _p=holds[activeHoldIdx]||{};
-    var title=_p.title||new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
-    holds[activeHoldIdx]={title:title,cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount,resId:_p.resId,resTag:_p.resTag};
-    var next=holds.findIndex(function(h,i){return h===null&&i!==activeHoldIdx;});
-    if(next>=0) activeHoldIdx=next;
-    sv(KEYS.holds,holds);
-  } else if(holds[activeHoldIdx]){
-    // 作業カートは空だが現行スロットに別データ→空きスロットへ
-    var n2=holds.findIndex(function(h){return h===null;});
-    if(n2>=0) activeHoldIdx=n2;
-  }
-}
-
 // 宿泊行を直接push（selectStayPeopleを泊数対応で再現）
 function pushStayLine(item,cat,n,nights){
   var prices=item.stay_prices||{};
@@ -2401,8 +2391,8 @@ function loadReservationToCart(type,id){
   var _rdate=(o.date||o.checkin||'');
   var _rmd=_rdate?((+_rdate.slice(5,7))+'/'+(+_rdate.slice(8,10))):'';
   _reservationSaleTag='予約: '+(o.name||'（無名）')+(_rmd?'（'+_rmd+'）':'');
-  prepareSlotForReservation();
-  cart=[];
+  parkCurrentCart();      // 現在の作業カートを退避（新規なら末尾へ）
+  cart=[]; activeHoldIdx=-1;
   applyYoyakuDiscountContext(o,type==='stay');
   var warn=[];
   if(type==='day'){
@@ -2426,9 +2416,15 @@ function loadReservationToCart(type,id){
     addToCart(rit,rcat); var rl=cart[cart.length-1]; if(rl) rl.qty=Math.max(1,parseInt(rn.qty)||1);
   });
   recalcCartPrices();
-  // 予約者名つきの保留スロットとして保存（タブに名前表示＋重複防止のresId付与）
-  holds[activeHoldIdx]={title:(o.name||'予約'),cart:cart.map(function(c){return Object.assign({},c);}),attrs:Object.assign({},selectedAttrs),discount:activeDiscount,resId:resId,resTag:_reservationSaleTag};
-  sv(KEYS.holds,holds);
+  // 予約者名つきの保留として末尾に追加（タブに名前表示＋重複防止のresId付与）
+  if(holds.length<MAX_HOLDS){
+    holds.push({title:(o.name||'予約'),cart:cart.map(function(c){return Object.assign({},c);}),attrs:Object.assign({},selectedAttrs),discount:activeDiscount,resId:resId,resTag:_reservationSaleTag});
+    activeHoldIdx=holds.length-1;
+    sv(KEYS.holds,holds);
+  } else {
+    activeHoldIdx=-1;
+    showToast('⚠ 保留が上限（'+MAX_HOLDS+'）のため未保留で読込みました','#c07000');
+  }
   document.getElementById('yoyaku-modal').classList.remove('open');
   switchTab('pos');
   renderCart();renderPOS();renderAttrs();renderDiscountBar();renderHoldTabs();
@@ -2634,8 +2630,7 @@ function confirmPayment(){
   const methodLabel={cash:'現金',card:'クレジットカード',other:'電子決済'}[currentPayMethod]||currentPayMethod;
   document.getElementById('done-amount').textContent='¥'+total.toLocaleString();
   document.getElementById('done-method').textContent=methodLabel+(isPaid?' ／ 支払済み':'');
-  holds[activeHoldIdx]=null;
-  sv(KEYS.holds,holds);
+  removeActiveHold(); // 会計した保留をリストから除去して繰り上げ
   document.getElementById('payment-done').classList.add('open');
   startPaymentDoneTimer();
 }
@@ -4715,8 +4710,7 @@ function triggerImport(){
         if(data.holds&&data.holds.length){
           data.holds.forEach(function(h){
             if(!h) return;
-            const idx=holds.findIndex(function(x){return x===null;});
-            if(idx!==-1){holds[idx]=h; addedHolds++;}
+            if(holds.length<MAX_HOLDS){holds.push(h); addedHolds++;}
           });
           sv(KEYS.holds,holds);
         }
@@ -4761,9 +4755,9 @@ function importSettings(e){
       if(data.holds&&data.holds.length){
         data.holds.forEach(h=>{
           if(!h) return;
-          const idx=holds.findIndex(x=>x===null);
-          if(idx!==-1){holds[idx]=h; addedHolds++;}
+          if(holds.length<MAX_HOLDS){holds.push(h); addedHolds++;}
         });
+        sv(KEYS.holds,holds);
       }
       renderCatFilterTabs(); renderPOS(); renderCart();
       renderDiscountBar(); renderAttrs(); renderHoldTabs(); renderSettings();
@@ -5202,7 +5196,7 @@ restoreFromIDB().then(()=>{
   if(hasPending){sv(KEYS.sales,sales);saveSnapshotToIDB();}
   siteNames = ld(KEYS.sites) || {};
   ATTRS = ld('pos_attrs') || JSON.parse(JSON.stringify(DEFAULT_ATTRS));
-  holds = ld(KEYS.holds) || [null,null,null,null,null,null,null,null,null,null];
+  holds = (ld(KEYS.holds)||[]).filter(function(h){return h;}); activeHoldIdx=-1;
   // 名称移行: チェア・ベンチ → ベンチ
   var needSave=false;
   items.forEach(function(it){if(it.id==='i_b04'&&it.name==='チェア・ベンチ'){it.name='ベンチ';needSave=true;}});
