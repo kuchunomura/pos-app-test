@@ -918,8 +918,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 347;
-const APP_BUILD_DATE = '2026/07/08 16:39';
+const APP_VERSION = 348;
+const APP_BUILD_DATE = '2026/07/08 16:53';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -2070,6 +2070,7 @@ function chgQty(idx,d){cart[idx].qty=Math.max(1,cart[idx].qty+d);renderCart();}
 function toggleMuraOff(idx){cart[idx].muraOff=!cart[idx].muraOff;recalcCartPrices();renderCart();}
 function removeCart(idx){cart.splice(idx,1);recalcCartPrices();renderPOS();renderCart();}
 function clearCart(){
+  _reservationSaleTag='';_pendingHoldTitle='';
   if(editingSaleId){
     // 修正モード中はeditingSaleIdを保持（タブ切り替え時に削除確認できるように）
     holds[activeHoldIdx]=null;
@@ -2135,7 +2136,7 @@ function confirmHold(){
   const title=document.getElementById('hold-title-input').value.trim()||new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
   holds[activeHoldIdx]={title,cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount};
   sv(KEYS.holds,holds);
-  _pendingHoldTitle='';
+  _pendingHoldTitle='';_reservationSaleTag='';
   // 保留後は新しいお客様用にクリア
   cart=[];selectedAttrs={age:[],nationality:[]};activeDiscount='';activeMura=false;
   // 次の空きスロットへ
@@ -2147,6 +2148,7 @@ function confirmHold(){
 }
 
 function switchHold(idx){
+  _reservationSaleTag='';_pendingHoldTitle='';
   // 現在のカートを保存（中身があれば）
   if(cart.length){
     const title=holds[activeHoldIdx]?.title||new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
@@ -2181,6 +2183,7 @@ let _yoyakuCache=null;      // 取得結果のキャッシュ（毎回取得し�
 let _yoyakuCacheTime=0;     // キャッシュ取得時刻
 let _yoyakuFetching=false;  // 二重取得ガード
 let _pendingHoldTitle='';   // 予約読込時に保留の既定名へ引き継ぐ
+let _reservationSaleTag='';  // 予約読込時に決済売上メモへ付与する「予約: 名前（M/D）」（ダブり確認用）
 
 function saveYoyakuGas(){ var el=document.getElementById('pos-yoyaku-gas-url'); if(!el)return; sv(YOYAKU_GAS_KEY,el.value.trim()); _yoyakuCache=null; showToast('✓ yoyaku URLを保存しました'); }
 function initYoyakuGasField(){ var el=document.getElementById('pos-yoyaku-gas-url'); if(el) el.value=ld(YOYAKU_GAS_KEY)||''; }
@@ -2334,6 +2337,10 @@ function loadReservationToCart(type,id){
   var o=(type==='day'?data.reservations:data.stays).find(function(x){return String(x.id)===String(id);});
   if(!o){ showToast('⚠ 予約が見つかりません','#c00'); return; }
   _pendingHoldTitle=o.name||''; // 保留に入れる時の既定名を予約者名に
+  // 決済売上メモへ付与する予約タグ（ダブり確認用）
+  var _rdate=(o.date||o.checkin||'');
+  var _rmd=_rdate?((+_rdate.slice(5,7))+'/'+(+_rdate.slice(8,10))):'';
+  _reservationSaleTag='予約: '+(o.name||'（無名）')+(_rmd?'（'+_rmd+'）':'');
   prepareSlotForReservation();
   cart=[];
   applyYoyakuDiscountContext(o,type==='stay');
@@ -2530,6 +2537,8 @@ function confirmPayment(){
     var carryLabel=nextDayMode===2?'前々日繰越':'前日繰越';
     saleMemo = saleMemo ? carryLabel+' / '+saleMemo : carryLabel;
   }
+  // 予約から読み込んだ会計は予約者名を売上メモ先頭へ（ダブり会計の確認用）
+  if(_reservationSaleTag){ saleMemo = saleMemo ? _reservationSaleTag+' / '+saleMemo : _reservationSaleTag; }
   const record={
     id:'s_'+Date.now(),datetime:saleDatetime,
     items:cart.map(i=>({...i})),total,method:currentPayMethod,
@@ -2547,6 +2556,7 @@ function confirmPayment(){
     editingSaleId=null;
   }
   sales.push(record);sv(KEYS.sales,sales);
+  _reservationSaleTag='';_pendingHoldTitle='';
   saveSnapshotToIDB();
   lastSaleId=record.id;
   autoSyncSale(record).then(function(ok){
