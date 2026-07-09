@@ -922,8 +922,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 366;
-const APP_BUILD_DATE = '2026/07/08 22:57';
+const APP_VERSION = 367;
+const APP_BUILD_DATE = '2026/07/09 09:54';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -964,14 +964,17 @@ function ld(k){
   try{const v=localStorage.getItem(k);if(v!=null)return JSON.parse(v);}catch(e){}
   return null;
 }
-async function restoreFromIDB(){
+// onlyMissing=true: localStorageに無いキーだけ復元（＝現行データを上書きしない）。
+// 起動時はこれを使う（IDBのスナップショットが古くて保留等を消す不具合を防ぐ）。
+// 手動復元(idbRestore)はonlyMissing無し＝全上書き。
+async function restoreFromIDB(onlyMissing){
   const KEYS=['pos_items','pos_sales','pos_gas','pos_cats','pos_item_order','pos_cat_order',
               'pos_sites','pos_discounts','pos_attrs','pos_display','pos_paid_display','pos_timer_fac','pos_holds'];
   try{
     const db=await openDB();
     await Promise.all(KEYS.map(k=>new Promise(res=>{
       const req=db.transaction(STORE_NAME,'readonly').objectStore(STORE_NAME).get(k);
-      req.onsuccess=e=>{if(e.target.result!=null){try{localStorage.setItem(k,e.target.result);}catch(e){}}res();};
+      req.onsuccess=e=>{if(e.target.result!=null && !(onlyMissing && localStorage.getItem(k)!=null)){try{localStorage.setItem(k,e.target.result);}catch(e){}}res();};
       req.onerror=()=>res();
     })));
   }catch(e){}
@@ -2091,7 +2094,7 @@ function toggleMuraOff(idx){cart[idx].muraOff=!cart[idx].muraOff;recalcCartPrice
 function removeCart(idx){cart.splice(idx,1);recalcCartPrices();renderPOS();renderCart();}
 // 編集中の保留をリストから除去して詰める（決済/クリア時）。-1なら何もしない
 function removeActiveHold(){
-  if(activeHoldIdx>=0 && activeHoldIdx<holds.length){ holds.splice(activeHoldIdx,1); sv(KEYS.holds,holds); }
+  if(activeHoldIdx>=0 && activeHoldIdx<holds.length){ holds.splice(activeHoldIdx,1); sv(KEYS.holds,holds); saveSnapshotToIDB(); }
   activeHoldIdx=-1;
 }
 function clearCart(){
@@ -2166,7 +2169,7 @@ function renderHoldTabs(){
 function editHoldTitle(idx){
   const h=holds[idx]; if(!h) return;
   const newTitle=prompt('保留名を変更',h.title||'');
-  if(newTitle!==null){ holds[idx].title=newTitle||h.title; sv(KEYS.holds,holds); renderHoldTabs(); }
+  if(newTitle!==null){ holds[idx].title=newTitle||h.title; sv(KEYS.holds,holds); saveSnapshotToIDB(); renderHoldTabs(); }
 }
 
 // 現在の作業カートを保留へ退避（編集中なら上書き、新規なら末尾に追加）。中身がなければ何もしない
@@ -2178,7 +2181,7 @@ function parkCurrentCart(){
   } else if(holds.length<MAX_HOLDS){
     holds.push({title:(_pendingHoldTitle||new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})),cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount,resTag:_reservationSaleTag||undefined});
   }
-  sv(KEYS.holds,holds);
+  sv(KEYS.holds,holds); saveSnapshotToIDB();
 }
 
 function holdCart(){
@@ -2198,7 +2201,7 @@ function confirmHold(){
     if(holds.length>=MAX_HOLDS){ showToast('⚠ 保留は最大'+MAX_HOLDS+'件です','#c00'); return; }
     holds.push({title,cart:[...cart],attrs:{...selectedAttrs},discount:activeDiscount,resTag:_reservationSaleTag||undefined});
   }
-  sv(KEYS.holds,holds);
+  sv(KEYS.holds,holds); saveSnapshotToIDB();
   _pendingHoldTitle='';_reservationSaleTag='';
   // 保留後は新しいお客様用にクリア
   cart=[];selectedAttrs={age:[],nationality:[]};activeDiscount='';activeMura=false;
@@ -2446,7 +2449,7 @@ function loadReservationToCart(type,id){
   if(holds.length<MAX_HOLDS){
     holds.push({title:(o.name||'予約'),cart:cart.map(function(c){return Object.assign({},c);}),attrs:Object.assign({},selectedAttrs),discount:activeDiscount,resId:resId,resTag:_reservationSaleTag});
     activeHoldIdx=holds.length-1;
-    sv(KEYS.holds,holds);
+    sv(KEYS.holds,holds); saveSnapshotToIDB();
   } else {
     activeHoldIdx=-1;
     showToast('⚠ 保留が上限（'+MAX_HOLDS+'）のため未保留で読込みました','#c07000');
@@ -5214,7 +5217,7 @@ function loadDisplaySettings(){
   }
 })();
 
-restoreFromIDB().then(()=>{
+restoreFromIDB(true).then(()=>{
   cats = ld(KEYS.cats) || DEFAULT_CATS;
   items = ld(KEYS.items) || DEFAULT_ITEMS;
   discountItems = ld(KEYS.discounts) || DEFAULT_DISCOUNTS;
