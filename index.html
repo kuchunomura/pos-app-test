@@ -410,7 +410,7 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
       <button class="btn-sm2" onclick="updateFilterBtnState();renderSales()">絞込</button>
       <button class="btn-sm2" onclick="clearFilter()">全件</button>
       <span id="sales-app-type-label" style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--accent2);color:#fff;"></span>
-      <button class="btn-sm2" onclick="window.open(SS_URL_MAIN,'_blank')" style="font-size:10px;padding:3px 8px;background:#f0f4e8;color:#2d5016;border-color:#a0c870;">🔗 mainシート リンク</button>
+      <button class="btn-sm2" onclick="window.open(getMainSSUrl(),'_blank')" style="font-size:10px;padding:3px 8px;background:#f0f4e8;color:#2d5016;border-color:#a0c870;">🔗 mainシート リンク</button>
       <button class="btn-sm2" onclick="window.open(getManualSSUrl(),'_blank')" style="font-size:10px;padding:3px 8px;background:#fff9c4;color:#7a5500;border-color:#d4b040;">🔗 手動集計シート リンク</button>
     </div>
     <div class="summary-cards" style="margin-bottom:10px;">
@@ -920,8 +920,8 @@ body{font-family:'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 379;
-const APP_BUILD_DATE = '2026/07/13 21:36';
+const APP_VERSION = 380;
+const APP_BUILD_DATE = '2026/07/13 21:46';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -929,6 +929,8 @@ const GAS_URL_TEST='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO
 const GAS_URL_MAIN='https://script.google.com/macros/s/AKfycbwbvsW8niGqZCsNz9JVfZhJ-0yFJMMJOht412DeSDQeJLZHUwjj5d8tgtCGL8PgdtwK1Q/exec';
 const SS_URL_TEST='https://docs.google.com/spreadsheets/d/1_iNytjWzVi6vvd_nSecG_uZJEnzkoL8zynY12UkNrNM/edit?pli=1';
 const SS_URL_MAIN='https://docs.google.com/spreadsheets/d/1WopPkAIZJSLjc9kr7C5hKvWCPYN7CYmOiXOvko0Q4iI/edit?pli=1';
+// mainの「現在の」同期先シートを開く（月初切替で更新される pos_current_ss_id_main を参照。同一オリジンで共有）
+function getMainSSUrl(){ var id=localStorage.getItem('pos_current_ss_id_main')||'1WopPkAIZJSLjc9kr7C5hKvWCPYN7CYmOiXOvko0Q4iI'; return 'https://docs.google.com/spreadsheets/d/'+id+'/edit?pli=1'; }
 const SS_URL_MANUAL='https://docs.google.com/spreadsheets/d/167eC69tlzoFxyhg2AT6BWY3FqwdDnfKxQX1GAIKhkb0/edit?pli=1';
 const KEYS = {items:'pos_items',sales:'pos_sales',gas:'pos_gas_test',cats:'pos_cats',itemOrder:'pos_item_order',catOrder:'pos_cat_order',sites:'pos_sites',discounts:'pos_discounts',attrs:'pos_attrs',holds:'pos_holds',deviceId:'pos_device_id'};
 // デバイスID自動生成（初回のみ）
