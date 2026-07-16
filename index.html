@@ -967,17 +967,22 @@ details.settings-section[open] > summary{margin-bottom:10px;}
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 389;
-const APP_BUILD_DATE = '2026/07/16 13:02';
+const APP_VERSION = 390;
+const APP_BUILD_DATE = '2026/07/16 14:44';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
 const GAS_URL_TEST='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
-const GAS_URL_MAIN='https://script.google.com/macros/s/AKfycbwbvsW8niGqZCsNz9JVfZhJ-0yFJMMJOht412DeSDQeJLZHUwjj5d8tgtCGL8PgdtwK1Q/exec';
+// 2026/07/16 ドライブのストレージ削除で旧main GAS（AKfycbwbvsW8...）がシートごと消えたため再作成
+const GAS_URL_MAIN='https://script.google.com/macros/s/AKfycbz4LOBG2EX_RPBDuX0-Qfzfdlbh9SIY_dZu_kTiIJveTp2iP_EOiaiy_70QvVBnCbUG/exec';
 const SS_URL_TEST='https://docs.google.com/spreadsheets/d/1_iNytjWzVi6vvd_nSecG_uZJEnzkoL8zynY12UkNrNM/edit?pli=1';
-const SS_URL_MAIN='https://docs.google.com/spreadsheets/d/1WopPkAIZJSLjc9kr7C5hKvWCPYN7CYmOiXOvko0Q4iI/edit?pli=1';
+// mainの同期先スプレッドシートID。URLもここから作る（IDを2か所に書かないため）
+const SS_ID_MAIN='1LzF3bDb9-JYJXFwNaqHv5zm5g0vVRKaZBj0sS_9_UI0'; // 7月POS main（2026/07/16 再作成）
+const SS_ID_MAIN_DEAD='1WopPkAIZJSLjc9kr7C5hKvWCPYN7CYmOiXOvko0Q4iI'; // 2026/07/16に消えた旧SS。端末に残る古い値の掃除用
+const SS_URL_MAIN='https://docs.google.com/spreadsheets/d/'+SS_ID_MAIN+'/edit?pli=1';
 // mainの「現在の」同期先シートを開く（月初切替で更新される pos_current_ss_id_main を参照。同一オリジンで共有）
-function getMainSSUrl(){ var id=localStorage.getItem('pos_current_ss_id_main')||'1WopPkAIZJSLjc9kr7C5hKvWCPYN7CYmOiXOvko0Q4iI'; return 'https://docs.google.com/spreadsheets/d/'+id+'/edit?pli=1'; }
+// 消えた旧SSのIDが残っていたら新しい方を使う
+function getMainSSUrl(){ var id=localStorage.getItem('pos_current_ss_id_main'); if(!id||id===SS_ID_MAIN_DEAD) id=SS_ID_MAIN; return 'https://docs.google.com/spreadsheets/d/'+id+'/edit?pli=1'; }
 const SS_URL_MANUAL='https://docs.google.com/spreadsheets/d/167eC69tlzoFxyhg2AT6BWY3FqwdDnfKxQX1GAIKhkb0/edit?pli=1';
 const KEYS = {items:'pos_items',sales:'pos_sales',gas:'pos_gas_test',cats:'pos_cats',itemOrder:'pos_item_order',catOrder:'pos_cat_order',sites:'pos_sites',discounts:'pos_discounts',attrs:'pos_attrs',holds:'pos_holds',deviceId:'pos_device_id'};
 // デバイスID自動生成（初回のみ）
