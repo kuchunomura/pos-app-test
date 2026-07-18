@@ -967,8 +967,8 @@ details.settings-section[open] > summary{margin-bottom:10px;}
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 409;
-const APP_BUILD_DATE = '2026/07/17 22:04';
+const APP_VERSION = 410;
+const APP_BUILD_DATE = '2026/07/18 21:02';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -2460,9 +2460,48 @@ let _pendingHoldTitle='';   // 予約読込時に保留の既定名へ引き継�
 let _reservationSaleTag='';  // 予約読込時に決済売上メモへ付与する「予約: 名前（M/D）」（ダブり確認用）
 let _reservationResId='';    // 予約読込時のresId（type:id）。決済売上に記録しピッカーの会計済み判定に使う
 let _copyArmKey='';          // 会計済み予約の「＋コピー」2回タップ確定用にアーム中のresKey
+let _paidArmKey='';          // 「レジ未計上→会計済みに」2回タップ確定用にアーム中のresKey
+let manualPaidRes = ld('pos_manual_paid_res') || {}; // レジに入れず会計してしまった予約を手動で会計済み扱い {resId:true}
 
 // 会計済み予約の再コピーは誤操作防止で2回タップ確定。1回目でアーム→再描画。
 function armCopyReservation(type,id){ _copyArmKey=type+':'+id; if(document.getElementById('yoyaku-modal').classList.contains('open')) renderYoyakuPicker(_yoyakuCache); }
+// レジを通さず会計してしまった予約を「会計済み」にする（売上には計上しない・二重会計防止の目印のみ）。2回タップ確定。
+function armMarkPaid(type,id){ _paidArmKey=type+':'+id; if(document.getElementById('yoyaku-modal').classList.contains('open')) renderYoyakuPicker(_yoyakuCache); }
+function markReservationPaid(type,id){ manualPaidRes[type+':'+id]=true; sv('pos_manual_paid_res',manualPaidRes); _paidArmKey=''; if(document.getElementById('yoyaku-modal').classList.contains('open')) renderYoyakuPicker(_yoyakuCache); showToast('会計済みにしました（レジ未計上）','#1a7a3a'); }
+function unmarkReservationPaid(type,id){ delete manualPaidRes[type+':'+id]; sv('pos_manual_paid_res',manualPaidRes); _paidArmKey=''; if(document.getElementById('yoyaku-modal').classList.contains('open')) renderYoyakuPicker(_yoyakuCache); showToast('会計済みを取り消しました','#c07000'); }
+// 宿泊者割引（yoyakuのstayGuestDiscと同じ判定）：OTAでない宿泊に紐づく空中ウォーク115分/1DAYは1人500円引き。村内優先で対象外。
+function posStayGuestDisc(o,stays){
+  if(o.mura) return 0;
+  if(o.facility!=='walk') return 0;
+  if([115,0].indexOf(Number(o.course))<0) return 0;
+  var ota=['rakuten','jalan','sou','other1','other2','other3'];
+  var ids=o.linkedStayIds||[];
+  for(var i=0;i<ids.length;i++){
+    var s=(stays||[]).find(function(x){return x.id===ids[i];});
+    if(s && !(s.cancelled||/キャンセル/.test(s.memo||'')) && ota.indexOf(s.source)<0) return 500;
+  }
+  return 0;
+}
+// 予約ピッカー用の紐づけ行（📌）。日帰り→紐づく宿泊、宿泊→紐づく日帰りを表示。
+function posLinkedHtml(x,data){
+  var o=x.o, out='';
+  var ok=function(z){return z && !(z.cancelled||/キャンセル/.test(z.memo||''));};
+  if(x.type==='day'){
+    (o.linkedStayIds||[]).forEach(function(sid){
+      var s=(data.stays||[]).find(function(y){return y.id===sid;}); if(!ok(s))return;
+      var sit=items.find(function(it){return it.id==='i_'+s.facility;});
+      var facName=sit?sit.name:(s.facGroup||'宿泊');
+      out+='<div style="font-size:11px;color:#7a1030;margin-top:2px">📌 '+esc(String(s.checkin||'').slice(5).replace('-','/'))+' '+esc(facName)+'（宿泊）'+(s.name?' '+esc(s.name):'')+'</div>';
+    });
+  } else {
+    (o.linkedDayIds||[]).forEach(function(did){
+      var r=(data.reservations||[]).find(function(y){return y.id===did;}); if(!ok(r))return;
+      var fac={walk:'空中ウォーク',tree:'ツリーハウス昼',bbq:'BBQ'}[r.facility]||r.facility;
+      out+='<div style="font-size:11px;color:#224466;margin-top:2px">📌 '+esc(String(r.date||'').slice(5).replace('-','/'))+' '+esc(fac)+(r.name?' '+esc(r.name):'')+(r.startTime?' '+esc(normDayTimeJST(r.startTime)):'')+'</div>';
+    });
+  }
+  return out;
+}
 
 function saveYoyakuGas(){ var el=document.getElementById('pos-yoyaku-gas-url'); if(!el)return; sv(YOYAKU_GAS_KEY,el.value.trim()); _yoyakuCache=null; showToast('✓ yoyaku URLを保存しました'); }
 function initYoyakuGasField(){ var el=document.getElementById('pos-yoyaku-gas-url'); if(el) el.value=ld(YOYAKU_GAS_KEY)||''; }
@@ -2667,8 +2706,10 @@ function renderYoyakuPicker(data){
     var _resKey=x.type+':'+x.id;
     var _rmd2=x.date?((+x.date.slice(5,7))+'/'+(+x.date.slice(8,10))):'';
     var expectTag='予約: '+(o.name||'（無名）')+(_rmd2?'（'+_rmd2+'）':'');
-    var paidDone=sales.some(function(s){return s && ((s.resIds&&s.resIds.indexOf(_resKey)>=0) || s.resId===_resKey || (s.memo && s.memo.indexOf(expectTag)>=0));});
-    var paidBadge=paidDone?' <span style="font-size:10px;font-weight:700;color:#1a7a3a;background:#e6f5ea;border:1px solid #9ccfab;border-radius:8px;padding:0 6px">✅ 会計済み</span>':'';
+    var paidBySale=sales.some(function(s){return s && ((s.resIds&&s.resIds.indexOf(_resKey)>=0) || s.resId===_resKey || (s.memo && s.memo.indexOf(expectTag)>=0));});
+    var manualPaid=!!manualPaidRes[_resKey];
+    var paidDone=paidBySale||manualPaid;
+    var paidBadge=paidDone?(' <span style="font-size:10px;font-weight:700;color:#1a7a3a;background:#e6f5ea;border:1px solid #9ccfab;border-radius:8px;padding:0 6px">✅ 会計済み'+((manualPaid&&!paidBySale)?'（レジ未計上）':'')+'</span>'):'';
     // カートにコピー（まとめ会計用）：追加済みは「コピー✅」。会計済みは2回タップ確定で再追加可。
     var inCart=cart.some(function(c){return c._resId===_resKey;});
     var copyBtn;
@@ -2681,21 +2722,37 @@ function renderYoyakuPicker(data){
     } else {
       copyBtn='<button onclick="event.stopPropagation();armCopyReservation(\''+x.type+'\',\''+idAttr+'\')" style="flex:0 0 auto;font-size:11px;font-weight:700;border-radius:6px;padding:4px 9px;background:#fff;color:#999;border:1px solid #ddd;cursor:pointer">＋コピー（済）</button>';
     }
+    // 宿泊者割引（500円引き）と紐づけ（📌）を表示
+    var sgdNote=(x.type==='day'&&posStayGuestDisc(o,data.stays))?'<div style="font-size:11px;color:#1a7a3a;font-weight:700;margin-top:2px">宿泊者割引 1人-500円</div>':'';
+    var linkedHtml=posLinkedHtml(x,data);
+    // レジを通さず会計してしまった時用：2回タップで「会計済み」に（売上には計上しない目印だけ）
+    var markBtn='';
+    if(manualPaid){
+      markBtn='<button onclick="event.stopPropagation();unmarkReservationPaid(\''+x.type+'\',\''+idAttr+'\')" style="font-size:10px;color:#999;background:#fff;border:1px solid #ddd;border-radius:6px;padding:3px 8px;cursor:pointer">会計済みを取消</button>';
+    } else if(!paidBySale){
+      if(_paidArmKey===_resKey) markBtn='<button onclick="event.stopPropagation();markReservationPaid(\''+x.type+'\',\''+idAttr+'\')" style="font-size:10px;font-weight:700;color:#c07000;background:#fff3e0;border:1px solid #e0b070;border-radius:6px;padding:3px 8px;cursor:pointer">もう1回タップで会計済みに</button>';
+      else markBtn='<button onclick="event.stopPropagation();armMarkPaid(\''+x.type+'\',\''+idAttr+'\')" style="font-size:10px;color:#7a1030;background:#fff;border:1px solid #d0a0b0;border-radius:6px;padding:3px 8px;cursor:pointer">レジ未計上→会計済みに</button>';
+    }
+    var markRow=markBtn?('<div style="margin-top:6px;text-align:right">'+markBtn+'</div>'):'';
     html+='<div onclick="'+onload+'" style="border:1px solid '+(paidDone?'#9ccfab':(held?'#e0b070':'var(--border)'))+';border-radius:8px;background:'+bgTint+';margin-bottom:6px;padding:9px 11px;cursor:pointer;'+(paidDone?'opacity:0.55':'')+'">'+
         '<div style="display:flex;align-items:flex-start;gap:8px">'+
           '<div style="flex:1;font-size:14px;font-weight:700;color:#111">'+esc(o.name||'（無名）')+paidBadge+heldBadge+' <span style="font-size:11px;color:#999;font-weight:400">'+tag+'</span></div>'+
           copyBtn+
         '</div>'+
         '<div style="font-size:12px;color:#111">'+esc(label)+'　'+esc(sub)+'</div>'+
+        sgdNote+
         rentalLine+
+        linkedHtml+
         memoHtml+
+        markRow+
     '</div>';
   });
   html+='<div style="margin-top:12px;padding:9px 11px;background:#fff;border:1px solid #eee;border-radius:8px;font-size:11px;color:#666;line-height:1.8">'+
     '・カートで数量や商品を変更したら「⏸ 保留」で保存できます。<br>'+
     '・カートをクリアしても予約は消えません（この画面からいつでも読み込み直せます）。<br>'+
     '・同じ決済者・グループなど、複数の予約をまとめて会計したい時は「＋コピー」で今のカートに追加できます。<br>'+
-    '・会計が済んだ予約は「✅ 会計済み」と薄く表示されます（二重会計の防止用）。'+
+    '・会計が済んだ予約は「✅ 会計済み」と薄く表示されます（二重会計の防止用）。<br>'+
+    '・レジを通さず会計してしまった時は「レジ未計上→会計済みに」を2回タップで目印だけ付けられます（売上には計上しません）。'+
   '</div>';
   c.innerHTML=html;
 }
