@@ -1128,8 +1128,8 @@ details.settings-section[open] > summary{margin-bottom:10px;}
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 560;
-const APP_BUILD_DATE = '2026/08/30 12:16';
+const APP_VERSION = 561;
+const APP_BUILD_DATE = '2026/09/06 08:38';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -3786,14 +3786,18 @@ function dtToDisplay(datetime){
 
 function getPeriodFiltered(){
   const now = new Date();
-  const today = now.toISOString().slice(0,10);
+  // ★ローカル(日本)日付で判定する。toISOString()はUTCなので、JSTの午前0〜9時はUTCがまだ前日となり
+  //   「今日」フィルタが昨日を指す→朝は集計が昨日のままになる不具合だった（dtToDateはローカル日付を返すため不一致）。
+  const today = localDateStr(now);
   const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate()-now.getDay());
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const weekStr = localDateStr(startOfWeek);
+  const monthStr = localDateStr(startOfMonth);
   return sales.filter(r=>{
     const d = dtToDate(r.datetime);
     if(currentPeriod==='today') return d===today;
-    if(currentPeriod==='week') return d>=startOfWeek.toISOString().slice(0,10);
-    if(currentPeriod==='month') return d>=startOfMonth.toISOString().slice(0,10);
+    if(currentPeriod==='week') return d>=weekStr;
+    if(currentPeriod==='month') return d>=monthStr;
     if(currentPeriod==='custom'){
       const from=document.getElementById('summary-from')?.value;
       const to=document.getElementById('summary-to')?.value;
