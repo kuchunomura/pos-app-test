@@ -1128,8 +1128,8 @@ details.settings-section[open] > summary{margin-bottom:10px;}
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 561;
-const APP_BUILD_DATE = '2026/09/06 08:38';
+const APP_VERSION = 562;
+const APP_BUILD_DATE = '2026/09/06 15:35';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -1231,7 +1231,7 @@ const DEFAULT_ITEMS = [
   {id:'i_walk1day',name:'空中ウォーク 1DAY',       price:3000, cat:'cat_walk', stock:0, free_mura:false},
   {id:'i_passday', name:'年間パス昼',              price:15000,cat:'cat_walk', stock:0, free_mura:false},
   {id:'i_1777680532193', name:'55分延長',  price:500,  cat:'cat_walk', stock:0, free_mura:false},
-  {id:'i_nara55',  name:'奈良県職員券55分',  price:0,    cat:'cat_walk', stock:0, free_mura:false},
+  {id:'i_nara55',  name:'奈良県職員券1DAY',  price:0,    cat:'cat_walk', stock:0, free_mura:false},
   {id:'i_1777557786554', name:'テスト',            price:1,    cat:'cat_walk', stock:0, free_mura:false},
   {id:'i_tree55',  name:'ツリーハウス昼 55分',     price:2000, cat:'cat_tree_day', stock:0, free_mura:false},
   {id:'i_tree115', name:'ツリーハウス昼 115分',    price:3000, cat:'cat_tree_day', stock:0, free_mura:false},
@@ -1378,7 +1378,7 @@ let items = ld(KEYS.items) || DEFAULT_ITEMS;
   if(idx>=0) items.splice(idx+1,0,it); else items.push(it);
   sv(KEYS.items,items);
 })();
-// 奈良県職員券55分 追加マイグレーション（空中ウォーク内・テストの左＝直前）
+// 奈良県職員券 追加マイグレーション（空中ウォーク内・テストの左＝直前）
 // グリッド順は itemOrder（保存された並び順）優先。itemOrderが無い端末は items配列順。
 // どちらの端末でも「テストの直前」に来るよう、items配列とitemOrderの両方を1回だけ直す（新フラグで再実行）。
 (function(){
@@ -1391,9 +1391,11 @@ let items = ld(KEYS.items) || DEFAULT_ITEMS;
   }
   // items配列に無ければ作る
   if(!items.find(function(x){return x.id==='i_nara55';})){
-    items.push({id:'i_nara55',name:'奈良県職員券55分',price:0,cat:'cat_walk',stock:0,free_mura:false});
+    items.push({id:'i_nara55',name:'奈良県職員券1DAY',price:0,cat:'cat_walk',stock:0,free_mura:false});
     sv(KEYS.items,items);
   }
+  // 既存端末の名称を「55分」→「1DAY」に更新（会計は空中ウォーク1DAYを満額計上する変更に合わせる）
+  (function(){ var n=items.find(function(x){return x.id==='i_nara55';}); if(n&&n.name!=='奈良県職員券1DAY'){ n.name='奈良県職員券1DAY'; sv(KEYS.items,items); } })();
   if(!localStorage.getItem(FLAG)){
     // items配列内の位置をテスト直前へ
     var ci=items.findIndex(function(x){return x.id==='i_nara55';});
@@ -1959,7 +1961,7 @@ function shadeColor(col, pct){
 function makeItemBtn(item, cat, grid){
   const btn=document.createElement('button');
   btn.className='item-btn';btn.dataset.itemId=item.id;
-  // 年間パス・テストは目立たないよう小さめ・淡色表示（奈良県職員券55分は通常色に戻した）
+  // 年間パス・テストは目立たないよう小さめ・淡色表示（奈良県職員券1DAYは通常色に戻した）
   if(item.id==='i_passday'||item.id==='i_passnight'||item.id==='i_1777557786554') btn.classList.add('pass-item');
   // CSSクラスを維持しつつ色だけ上書き
   const inCartQty=cart.filter(ci=>ci.id===item.id||ci.id.startsWith(item.id+'_')).reduce((s,ci)=>s+ci.qty,0);
@@ -2002,7 +2004,7 @@ function makeItemBtn(item, cat, grid){
   } else {
     // 空中ウォーク（日帰り）は「施設名／時間」を改行して1DAYと揃える
     var _dispName=item.name;
-    if(item.id==='i_nara55') _dispName=_dispName.replace('55分','<br>55分'); // 「奈良県職員券／55分」で改行
+    if(item.id==='i_nara55') _dispName=_dispName.replace('1DAY','<br>1DAY'); // 「奈良県職員券／1DAY」で改行
     if(item.cat==='cat_walk' && item.id!=='i_passday' && /\s/.test(_dispName)) _dispName=_dispName.replace(/\s+/, '<br>');
     nameHtml='<div class="item-name" style="color:'+(item.nameColor||cat.text)+';'+(item.fontSize||cat.fontSize?'font-size:'+(item.fontSize||cat.fontSize)+';':'')+'">'+dotHtml+_dispName+'</div>';
   }
@@ -2323,7 +2325,7 @@ function recalcCartPrices(){
 
 // ===== カート =====
 function addToCart(item,cat){
-  // 奈良県職員券55分タイル：タップで空中ウォーク55分満額＋奈良県職員券マイナス行を入れる（このタイル自体は追加しない）
+  // 奈良県職員券1DAYタイル：タップで空中ウォーク1DAY満額＋奈良県職員券マイナス行を入れる（このタイル自体は追加しない）
   if(item.id==='i_nara55'){ addNaraTicket(); return; }
   // SOU🟡🟠レンタル無料モード中：備品レンタルは0円/区分souで追加
   if(souRentalFree && item.cat==='cat_rental'){ addSouFreeRental(item, cat); return; }
@@ -2399,22 +2401,22 @@ function applyPoint(){
   showToast(p>0?'✓ ポイント '+p.toLocaleString()+'円分を適用しました':'✓ ポイントを解除しました');
 }
 
-// ===== 奈良県職員券（空中ウォーク55分＋グッズ1）=====
+// ===== 奈良県職員券（空中ウォーク1DAY）=====
 // ポイントと同じ「後日振込ボウチャー」。レジ受取は0円だが、奈良県が後日満額を施設に振り込むので
-// 空中ウォーク55分は満額で売上計上し、奈良県職員券のマイナス行で受取を0にする。集計・報告書では
+// 空中ウォーク1DAYは満額で売上計上し、奈良県職員券のマイナス行で受取を0にする。集計・報告書では
 // 奈良県職員券行を商品/施設収入から除外して本来の総売上へ足し戻す（GAS側でポイントと同じ扱い）。
 const NARA_ITEM_ID='i_nara';
 function addNaraTicket(){
-  var walk=items.find(function(i){return i.id==='i_walk55';});
-  if(!walk){showToast('⚠ 空中ウォーク55分の商品が見つかりません','#c00');return;}
+  var walk=items.find(function(i){return i.id==='i_walk1day';});
+  if(!walk){showToast('⚠ 空中ウォーク1DAYの商品が見つかりません','#c00');return;}
   var p=walk.price; // 満額（割引を無視して固定＝奈良県は満額振込のため）
   var wcat=(typeof cats!=='undefined'&&cats.find)?cats.find(function(c){return c.id==='cat_walk';}):null;
-  // 空中ウォーク55分を満額で追加（manualPrice:true で割引の影響を受けない。人数・55分列に計上される）
-  cart.push({id:'i_walk55',name:walk.name,origPrice:p,price:p,qty:1,discounted:false,manualPrice:true,cat:'cat_walk',catColor:wcat?wcat.bg:'#f0f6ff'});
+  // 空中ウォーク1DAYを満額で追加（manualPrice:true で割引の影響を受けない。人数・1DAY列に計上される）
+  cart.push({id:'i_walk1day',name:walk.name,origPrice:p,price:p,qty:1,discounted:false,manualPrice:true,cat:'cat_walk',catColor:wcat?wcat.bg:'#f0f6ff'});
   // 奈良県職員券マイナス行（受取を0円にする）
   cart.push({id:NARA_ITEM_ID,name:'奈良県職員券',origPrice:-p,price:-p,qty:1,discounted:false,manualPrice:true,cat:'',catColor:'#e8fff0'});
   renderCart();
-  showToast('✓ 奈良県職員券（空中ウォーク55分＋グッズ1）を追加');
+  showToast('✓ 奈良県職員券（空中ウォーク1DAY）を追加');
 }
 
 // ===== SOU（OTA）会計：色パターン → 構成商品を0円/SOU支払済で投入 =====
@@ -2522,12 +2524,12 @@ function renderCart(){
       discTag='<span style="font-size:10px;background:#fde8e8;color:var(--red);border:1px solid #f5c0c0;border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:600;">'+(item.free_mura?'無料':'割引')+'</span>';
     }
     const priceColor = item.paidLabel ? paidDisplaySettings.color : (item.discounted ? 'var(--red)' : 'var(--accent2)');
-    // 奈良県職員券の行は数量・単価編集不要。金額と✕だけ（後日奈良県振込・空中ウォーク55分＋グッズ1）
+    // 奈良県職員券の行は数量・単価編集不要。金額と✕だけ（後日奈良県振込・空中ウォーク1DAY）
     if(item.id===NARA_ITEM_ID){
       div.innerHTML=
         '<div style="font-size:13px;font-weight:700;line-height:1.4;color:#2a7d2a;">🎫 '+item.name+'</div>'+
         '<div style="display:flex;align-items:center;gap:4px;">'+
-          '<div style="flex:1;font-size:11px;color:var(--text2);">空中ウォーク55分＋グッズ1（後日奈良県振込）</div>'+
+          '<div style="flex:1;font-size:11px;color:var(--text2);">空中ウォーク1DAY（後日奈良県振込）</div>'+
           '<div style="font-size:14px;font-weight:700;color:#2a7d2a;">¥'+(item.price*item.qty).toLocaleString()+'</div>'+
           '<div style="color:#ccc;font-size:16px;cursor:pointer;padding:0 4px;" onclick="removeCart('+idx+')">✕</div>'+
         '</div>';
