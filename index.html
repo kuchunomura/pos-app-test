@@ -197,6 +197,23 @@ details.settings-section[open] > summary{margin-bottom:10px;}
 .spin-ico{display:inline-block;}
 .btn-spinning{opacity:0.75;pointer-events:none;}
 .btn-spinning .spin-ico{animation:posSpin 0.7s linear infinite;}
+/* 開始時間入力（時間タブ）：PC版Chromeのtime入力風。時・分をタップ→下に選択肢リスト＋数字で直接入力も可 */
+.tsp{position:relative;display:inline-flex;align-items:center;justify-content:center;width:140px;box-sizing:border-box;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:16px;cursor:text;}
+.tsp.open{border-color:var(--accent);}
+.tsp-seg{width:2.2em;border:none;background:transparent;text-align:center;font-size:16px;font-family:inherit;color:var(--text);padding:4px 0;border-radius:4px;outline:none;-webkit-appearance:none;appearance:none;}
+.tsp-seg:focus{background:#cfe3ff;}
+.tsp-colon{color:var(--text);padding:0 1px;}
+.tsp-drop{display:none;position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);z-index:50;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:4px;gap:4px;}
+.tsp.open .tsp-drop{display:flex;}
+.tsp-col{position:relative;width:58px;height:216px;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.tsp-col::-webkit-scrollbar{display:none;}
+.tsp-it{height:36px;line-height:36px;text-align:center;font-size:16px;border-radius:6px;cursor:pointer;color:var(--text);-webkit-tap-highlight-color:transparent;}
+.tsp-it:active{background:#e6eefb;}
+.tsp-it.sel{background:var(--accent);color:#fff;font-weight:700;}
+/* 現在時刻（タップで開始時間を現在時刻に戻す）：押せると分かる見た目 */
+.clock-reset{text-align:center;cursor:pointer;padding:6px 14px;border:1px solid var(--border);border-radius:10px;background:#fff;-webkit-tap-highlight-color:transparent;}
+.clock-reset:active{background:#eef4fb;}
+.clock-reset-hint{font-size:11px;color:var(--accent);margin-top:2px;}
 
 
 
@@ -304,14 +321,15 @@ details.settings-section[open] > summary{margin-bottom:10px;}
 
     <!-- 現在時刻 ＋ 開始時間を変更する場合（右側・間隔をあけて横並び） -->
     <div style="display:flex;gap:28px;flex-wrap:wrap;justify-content:center;align-items:center;margin-bottom:16px;">
-      <div style="text-align:center;">
+      <div class="clock-reset" onclick="resetStartToNow()" title="タップで開始時間を現在時刻に戻す">
         <div style="font-size:12px;color:var(--text2);margin-bottom:4px;">現在時刻</div>
         <div style="font-size:26px;font-weight:700;font-family:monospace;color:var(--accent);letter-spacing:2px;" id="timer-clock">00:00:00</div>
+        <div class="clock-reset-hint">↺ タップで現在時刻に戻す</div>
       </div>
       <div style="text-align:center;">
         <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px;text-align:center;">開始時間を変更する場合↴</label>
         <div style="display:flex;gap:8px;align-items:center;justify-content:center;">
-          <input type="time" id="timer-start" oninput="timerStartManual=true;calcTimer()" onchange="timerStartManual=true;calcTimer()" style="width:140px;text-align:center;color:var(--text);padding:10px;border:1px solid var(--border);border-radius:8px;font-size:16px;font-family:inherit;">
+          <input type="hidden" id="timer-start"><div class="tsp" data-for="timer-start"></div>
         </div>
       </div>
     </div>
@@ -354,7 +372,7 @@ details.settings-section[open] > summary{margin-bottom:10px;}
       <div style="margin-bottom:10px;">
         <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px;text-align:center;">開始時間を変更する場合↴</label>
         <div style="display:flex;gap:8px;align-items:center;justify-content:center;">
-          <input type="time" id="combo-start" oninput="comboStartManual=true;calcCombo()" onchange="comboStartManual=true;calcCombo()" style="width:140px;text-align:center;color:var(--text);padding:10px;border:1px solid var(--border);border-radius:8px;font-size:16px;font-family:inherit;">
+          <input type="hidden" id="combo-start"><div class="tsp" data-for="combo-start"></div>
         </div>
       </div>
       <div id="combo-result" style="display:none;"></div>
@@ -1139,8 +1157,8 @@ details.settings-section[open] > summary{margin-bottom:10px;}
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 589;
-const APP_BUILD_DATE = '2026/09/28 14:05';
+const APP_VERSION = 593;
+const APP_BUILD_DATE = '2026/10/03 12:57';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -6407,6 +6425,7 @@ function openManualRefund(){
 }
 function setManualRefundMode(m){
   _manualRefund.mode=m;
+  if(m==='cart') _manualRefund.sel=cart.map(function(i){ return Math.abs(i.qty); }); // 既定は全部選択（返金する数量）
   var ba=document.getElementById('mrf-mode-amount'), bc=document.getElementById('mrf-mode-cart');
   if(ba) ba.classList.toggle('sel',m==='amount'); if(bc) bc.classList.toggle('sel',m==='cart');
   var ab=document.getElementById('mrf-amount-box'), cb=document.getElementById('mrf-cart-box');
@@ -6417,11 +6436,33 @@ function setManualRefundMode(m){
 function renderManualRefundCart(){
   var el=document.getElementById('mrf-cart-list'); if(!el) return;
   if(!cart.length){ el.innerHTML='<div style="color:var(--red);padding:8px 0;">カートが空です。返金したい商品をカートに入れてから選んでください。</div>'; return; }
-  el.innerHTML=cart.map(function(i){ return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;"><span>'+esc(i.name)+(i.qty>1?' ×'+i.qty:'')+'</span><span style="color:var(--red);">−¥'+(i.price*i.qty).toLocaleString()+'</span></div>'; }).join('')
-    +'<div style="font-size:10px;color:var(--text2);margin-top:4px;">※いまのカートの内容をそのまま返金（マイナス計上）。商品別販売数もこの分だけ減ります。</div>';
+  var sel=_manualRefund.sel||[];
+  // 各商品をタップで選択/解除。数量2以上は −/＋ で返金する数を選べる（選んだ分だけ返金）
+  el.innerHTML=cart.map(function(i,idx){
+    var max=Math.abs(i.qty), n=Math.min(sel[idx]||0,max), on=n>0;
+    var step=(max>1&&on)?'<span style="display:inline-flex;align-items:center;gap:4px;margin-left:6px;" onclick="event.stopPropagation()">'
+      +'<button type="button" onclick="mrfStep('+idx+',-1)" style="width:30px;height:30px;border:1px solid var(--border);border-radius:6px;background:#fff;font-size:16px;">−</button>'
+      +'<b style="min-width:22px;text-align:center;">'+n+'</b>'
+      +'<button type="button" onclick="mrfStep('+idx+',1)" style="width:30px;height:30px;border:1px solid var(--border);border-radius:6px;background:#fff;font-size:16px;">＋</button>'
+      +'<span style="font-size:10px;color:var(--text2);">/'+max+'</span></span>':'';
+    return '<div onclick="mrfToggle('+idx+')" style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 4px;border-bottom:1px solid #f0f0f0;cursor:pointer;'+(on?'':'opacity:.45;')+'">'
+      +'<span style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;"><span style="font-size:18px;">'+(on?'☑':'☐')+'</span><span>'+esc(i.name)+(max>1&&!on?' ×'+max:'')+'</span>'+step+'</span>'
+      +'<span style="color:var(--red);white-space:nowrap;">'+(on?'−¥'+(i.price*n).toLocaleString():'—')+'</span></div>';
+  }).join('')
+    +'<div style="font-size:10px;color:var(--text2);margin-top:4px;">※タップで選んだ商品だけ返金（マイナス計上）。商品別販売数もこの分だけ減ります。返金した分はカートから外れ、残りはカートに残ります。</div>';
+}
+function mrfToggle(idx){
+  var sel=_manualRefund.sel||[]; var max=Math.abs((cart[idx]||{}).qty||0);
+  sel[idx]=(sel[idx]>0)?0:max; _manualRefund.sel=sel;
+  renderManualRefundCart(); updateManualRefundTotal();
+}
+function mrfStep(idx,d){
+  var sel=_manualRefund.sel||[]; var max=Math.abs((cart[idx]||{}).qty||0);
+  sel[idx]=Math.max(0,Math.min(max,(sel[idx]||0)+d)); _manualRefund.sel=sel;
+  renderManualRefundCart(); updateManualRefundTotal();
 }
 function manualRefundAmount(){
-  if(_manualRefund.mode==='cart') return cart.reduce(function(s,i){return s+i.price*i.qty;},0);
+  if(_manualRefund.mode==='cart'){ var sel=_manualRefund.sel||[]; return cart.reduce(function(s,i,idx){return s+i.price*Math.min(sel[idx]||0,Math.abs(i.qty));},0); }
   var v=parseInt((document.getElementById('mrf-amount')||{}).value,10); return isNaN(v)?0:Math.max(0,v);
 }
 function updateManualRefundTotal(){
@@ -6435,15 +6476,17 @@ function setManualRefundMethod(m){
 }
 function confirmManualRefund(){
   var total=manualRefundAmount();
-  if(total<=0){ showToast(_manualRefund.mode==='cart'?'カートに商品がありません':'返金する金額を入力してください','#c00'); return; }
+  if(total<=0){ showToast(_manualRefund.mode==='cart'?'返金する商品を選んでください':'返金する金額を入力してください','#c00'); return; }
   var mLabel={cash:'現金',card:'カード',other:'電子決済'}[_manualRefund.method]||_manualRefund.method;
   var items;
   if(_manualRefund.mode==='cart'){
-    items=cart.map(function(i){ var it=Object.assign({},i); it.qty=-Math.abs(i.qty); delete it._resId; delete it._resTag; delete it._souTag; return it; });
+    var _sel=_manualRefund.sel||[];
+    items=[];
+    cart.forEach(function(i,idx){ var n=Math.min(_sel[idx]||0,Math.abs(i.qty)); if(n<=0)return; var it=Object.assign({},i); it.qty=-n; delete it._resId; delete it._resTag; delete it._souTag; items.push(it); });
   } else {
     items=[{id:'REFUND_MANUAL', name:'返金（手動）', price:-total, qty:1, cat:'', _manualRefund:true}];
   }
-  if(!confirm('返金内容を確認してください。\n\n'+(_manualRefund.mode==='cart'?'カートの商品を返金':'金額のみ返金')+'\n返金合計 −¥'+total.toLocaleString()+'（'+mLabel+'で返金）\n\n元売上なしの返金として記録します。')) return;
+  if(!confirm('返金内容を確認してください。\n\n'+(_manualRefund.mode==='cart'?'選んだ商品を返金'+String.fromCharCode(10)+items.map(function(i){return '・'+i.name+' ×'+Math.abs(i.qty);}).join(String.fromCharCode(10)):'金額のみ返金')+'\n返金合計 −¥'+total.toLocaleString()+'（'+mLabel+'で返金）\n\n元売上なしの返金として記録します。')) return;
   var rec={
     id:'s_'+Date.now(), datetime:new Date().toISOString(),
     items:items, total:-total, method:_manualRefund.method,
@@ -6457,7 +6500,13 @@ function confirmManualRefund(){
   sales.push(rec); sv(KEYS.sales,sales); saveSnapshotToIDB();
   autoSyncSale(rec).then(function(ok){ var s=sales.find(function(x){return x.id===rec.id;}); if(s){ s.syncStatus=ok?'ok':'fail'; sv(KEYS.sales,sales); saveSnapshotToIDB(); renderSales(); } });
   document.getElementById('refund-manual-modal').classList.remove('open');
-  if(_manualRefund.mode==='cart'){ clearCart(); }
+  if(_manualRefund.mode==='cart'){
+    // 返金した分だけカートから外す（全部返金ならクリア＝従来どおり）
+    var _s2=_manualRefund.sel||[];
+    cart.forEach(function(i,idx){ var n=Math.min(_s2[idx]||0,Math.abs(i.qty)); if(n>0) i.qty=(i.qty<0?-1:1)*(Math.abs(i.qty)-n); });
+    cart=cart.filter(function(i){ return i.qty!==0; });
+    if(!cart.length) clearCart(); else renderCart();
+  }
   renderSales();
   showToast('↩ 返金を記録しました（−¥'+total.toLocaleString()+'・'+mLabel+'）','#1a7a3a');
 }
@@ -6646,8 +6695,8 @@ function updateClocks(){
     // 開始時間を現在時刻に連動（手動で設定していなければ・時間タブ表示中のみ再計算）
     var _tHM = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
     var _timerActive = (function(){var e=document.getElementById('tab-timer');return e&&e.classList.contains('active');})();
-    if(!timerStartManual){ var _ts=document.getElementById('timer-start'); if(_ts){ _ts.value=_tHM; if(_timerActive) calcTimer(true); } }
-    if(!comboStartManual){ var _cs=document.getElementById('combo-start'); if(_cs){ _cs.value=_tHM; if(_timerActive) calcCombo(); } }
+    if(!timerStartManual){ var _ts=document.getElementById('timer-start'); if(_ts){ setTimeInput('timer-start',_tHM); if(_timerActive) calcTimer(true); } }
+    if(!comboStartManual){ var _cs=document.getElementById('combo-start'); if(_cs){ setTimeInput('combo-start',_tHM); if(_timerActive) calcCombo(); } }
     // 日付が変わったら繰越バッジをリセット・再取得
     var todayStr=now.getFullYear()+'-'+('0'+(now.getMonth()+1)).slice(-2)+'-'+('0'+now.getDate()).slice(-2);
     if(carryOverFetchDate && carryOverFetchDate!==todayStr) fetchCarryOverFromGAS();
@@ -6658,6 +6707,123 @@ updateClocks();
 
 // ===== 時間計算タブ =====
 let timerFacId_dummy; // 上部で宣言済み
+
+// ===== 開始時間入力（PC版Chrome風：時・分をタップ→下に時・分の選択肢リストが開く＋数字キーで直接入力も可） =====
+// 値は従来どおり hidden の #timer-start / #combo-start（"HH:MM"）に入る。計算側は無変更。
+// 確定（計算・履歴記録）はリストを閉じた時に1回だけ：分を選ぶ／分を打ち終える／Enter／枠の外をタップ。
+function _tspPad(n){ return String(n).padStart(2,'0'); }
+function _tspBox(id){ return document.querySelector('.tsp[data-for="'+id+'"]'); }
+function _tspBusy(box){ return !!box && (box.classList.contains('open') || box.contains(document.activeElement)); }
+function setTimeInput(id, v){
+  var el = document.getElementById(id); if(!el) return;
+  if(_tspBusy(_tspBox(id))) return; // 入力中・リスト表示中は毎分の現在時刻連動などで書き換えない
+  el.value = v; renderTimeSpin(id);
+}
+// 現在時刻（時計表示）タップ → 開始時間を現在時刻に戻す（単体・両方利用とも。現在時刻連動も再開）
+function resetStartToNow(){
+  var ae = document.activeElement;
+  if(ae && ae.classList && ae.classList.contains('tsp-seg')) ae.blur();
+  Array.prototype.forEach.call(document.querySelectorAll('.tsp.open'), function(b){ b.classList.remove('open'); });
+  setTimerNow(); setComboNow();
+  showToast('↺ 開始時間を現在時刻に戻しました');
+}
+function _tspApply(id, v){
+  var el = document.getElementById(id); if(!el) return;
+  var changed = el.value !== v;
+  el.value = v; renderTimeSpin(id, true);
+  if(!changed) return;
+  if(id==='timer-start'){ timerStartManual = true; calcTimer(); }
+  else { comboStartManual = true; calcCombo(); }
+}
+function _tspCommit(id){
+  var box = _tspBox(id); if(!box) return;
+  var old = ((document.getElementById(id)||{}).value || '00:00').split(':');
+  var h = parseInt(box.querySelector('[data-v="h"]').value, 10);
+  var m = parseInt(box.querySelector('[data-v="m"]').value, 10);
+  if(isNaN(h)) h = Number(old[0]) || 0;
+  if(isNaN(m)) m = Number(old[1]) || 0;
+  h = Math.min(23, Math.max(0, h)); m = Math.min(59, Math.max(0, m));
+  _tspApply(id, _tspPad(h)+':'+_tspPad(m));
+}
+// リストの選択中ハイライト（scroll=trueで選択中の項目が真ん中に来るようスクロール）
+function _tspMark(id, scroll){
+  var box = _tspBox(id); if(!box) return;
+  ['h','m'].forEach(function(part){
+    var val = box.querySelector('[data-v="'+part+'"]').value;
+    var col = box.querySelector('.tsp-col[data-c="'+part+'"]');
+    Array.prototype.forEach.call(col.children, function(it){
+      var on = it.getAttribute('data-n') === val;
+      if(on) it.classList.add('sel'); else it.classList.remove('sel');
+      if(on && scroll) col.scrollTop = it.offsetTop - (col.clientHeight - it.offsetHeight)/2;
+    });
+  });
+}
+function _tspOpen(id){
+  var box = _tspBox(id); if(!box || box.classList.contains('open')) return;
+  Array.prototype.forEach.call(document.querySelectorAll('.tsp.open'), function(b){ if(b!==box) _tspClose(b.getAttribute('data-for')); });
+  box.classList.add('open'); _tspMark(id, true);
+}
+function _tspClose(id){
+  var box = _tspBox(id); if(!box || !box.classList.contains('open')) return;
+  box.classList.remove('open'); _tspCommit(id);
+}
+function renderTimeSpin(id, force){
+  var box = _tspBox(id); if(!box) return;
+  if(!box.firstChild){
+    var seg = function(part){ return '<input type="tel" inputmode="numeric" maxlength="2" autocomplete="off" class="tsp-seg" data-v="'+part+'">'; };
+    var list = function(part, n){ var s = '<div class="tsp-col" data-c="'+part+'">'; for(var i=0;i<n;i++){ s += '<div class="tsp-it" data-n="'+_tspPad(i)+'">'+_tspPad(i)+'</div>'; } return s+'</div>'; };
+    box.innerHTML = seg('h')+'<span class="tsp-colon">:</span>'+seg('m')+'<div class="tsp-drop">'+list('h',24)+list('m',60)+'</div>';
+    var hEl = box.querySelector('[data-v="h"]'), mEl = box.querySelector('[data-v="m"]');
+    // 枠の余白・「:」をタップしても時から入力開始
+    box.addEventListener('click', function(e){ if(e.target===box || e.target.className==='tsp-colon') hEl.focus(); });
+    [hEl, mEl].forEach(function(s){
+      var part = s.getAttribute('data-v');
+      s.addEventListener('focus', function(){ _tspOpen(id); setTimeout(function(){ try{ s.select(); }catch(e){} }, 0); });
+      s.addEventListener('blur', function(){ if(!box.classList.contains('open')) _tspCommit(id); });
+      s.addEventListener('keydown', function(e){
+        if(e.key==='Enter'){ e.preventDefault(); _tspClose(id); s.blur(); }
+        else if(e.key==='Escape'){ s.blur(); _tspClose(id); }
+        else if(e.key==='ArrowUp' || e.key==='ArrowDown'){
+          e.preventDefault();
+          var n = (parseInt(s.value,10)||0) + (e.key==='ArrowUp'?1:-1), mx = part==='h'?24:60;
+          s.value = _tspPad((n+mx)%mx); _tspMark(id, true); s.select();
+        }
+      });
+      s.addEventListener('input', function(){
+        var dg = s.value.replace(/\D/g,'').slice(0,2);
+        s.value = dg; if(!dg) return;
+        // PCと同じ：2桁入力、または1桁目で次の桁が入りえない数字（時3-9・分6-9）なら次へ／確定
+        if(dg.length===2 || Number(dg) > (part==='h'?2:5)){
+          s.value = _tspPad(Math.min(Number(dg), part==='h'?23:59));
+          if(part==='h'){ mEl.focus(); _tspMark(id, true); }
+          else { _tspClose(id); s.blur(); }
+        } else _tspMark(id, false);
+      });
+    });
+    // リストから選ぶ：時は選んでもリストを開いたまま、分を選んだら閉じて確定
+    box.querySelector('.tsp-drop').addEventListener('click', function(e){
+      var it = e.target; if(!it.classList || !it.classList.contains('tsp-it')) return;
+      var part = it.parentNode.getAttribute('data-c');
+      box.querySelector('[data-v="'+part+'"]').value = it.getAttribute('data-n');
+      _tspMark(id, false);
+      if(part==='m'){ var ae = document.activeElement; if(ae && box.contains(ae)) ae.blur(); _tspClose(id); }
+    });
+    // 枠の外をタップしたら閉じて確定
+    if(!window._tspDocBound){
+      window._tspDocBound = true;
+      document.addEventListener('pointerdown', function(e){
+        Array.prototype.forEach.call(document.querySelectorAll('.tsp.open'), function(b){ if(!b.contains(e.target)) _tspClose(b.getAttribute('data-for')); });
+      }, true);
+    }
+  }
+  // 入力中・リスト表示中は毎分の現在時刻連動で書き換えない（force＝自分の確定の時だけ）
+  if(!force && _tspBusy(box)) return;
+  var p = ((document.getElementById(id)||{}).value || '').split(':');
+  ['h','m'].forEach(function(part, i){
+    var s = box.querySelector('[data-v="'+part+'"]');
+    if(s) s.value = p.length===2 ? p[i] : '--';
+  });
+}
 
 function initTimer(){
   renderTimerFacBtns();
@@ -6757,7 +6923,7 @@ function setComboNow(){
   const h = String(now.getHours()).padStart(2,'0');
   const m = String(now.getMinutes()).padStart(2,'0');
   const el = document.getElementById('combo-start');
-  if(el){ el.value = h+':'+m; calcCombo(); }
+  if(el){ setTimeInput('combo-start', h+':'+m); calcCombo(); }
 }
 
 function getActualMins(facId, courseMin){
@@ -6848,7 +7014,7 @@ function setTimerNow(){
   const now = new Date();
   const h = String(now.getHours()).padStart(2,'0');
   const m = String(now.getMinutes()).padStart(2,'0');
-  document.getElementById('timer-start').value = h+':'+m;
+  setTimeInput('timer-start', h+':'+m);
   calcTimer();
 }
 
