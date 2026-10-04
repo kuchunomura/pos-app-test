@@ -56,7 +56,7 @@
 
 <h2 id="目次">目次</h2>
 
-<ol><li><a href="#1-このシステムの全体像">このシステムの全体像</a></li><li><a href="#2-使う道具の説明">使う「道具」の説明</a></li><li><a href="#3-道具どうしの関係性">道具どうしの関係性</a></li><li><a href="#4-ファイルの場所と役割">ファイルの場所と役割</a></li><li><a href="#5-アプリのデータの流れ">アプリのデータの流れ</a></li><li><a href="#6-改修の基本手順">改修の基本手順</a></li><li><a href="#7-test版とmain版の使い分け">「test版」と「main版」の使い分け</a></li><li><a href="#8-デプロイとは何か">デプロイとは何か</a></li><li><a href="#9-gasgoogle-apps-scriptの改修">GAS（Google Apps Script）の改修</a></li><li><a href="#10-毎月やること定期メンテナンス">毎月やること（定期メンテナンス）</a></li><li><a href="#11-アカウントと引き継ぎ">アカウントと引き継ぎ</a></li><li><a href="#12-別のpcで作業する環境を作り直す">別のPCで作業する・環境を作り直す</a></li><li><a href="#13-予約アプリyoyakuの構造改修トラブル">予約アプリ（yoyaku）の構造・改修・トラブル</a></li><li><a href="#14-よくある改修パターンと頼み方の例">よくある改修パターンと頼み方の例</a></li><li><a href="#15-困ったときのチェックリスト">困ったときのチェックリスト</a></li><li><a href="#16-重要な用語集">重要な用語集</a></li></ol>
+<ol><li><a href="#1-このシステムの全体像">このシステムの全体像</a></li><li><a href="#2-使う道具の説明">使う「道具」の説明</a></li><li><a href="#3-道具どうしの関係性">道具どうしの関係性</a></li><li><a href="#4-ファイルの場所と役割">ファイルの場所と役割</a></li><li><a href="#5-アプリのデータの流れ">アプリのデータの流れ</a></li><li><a href="#6-改修の基本手順">改修の基本手順</a></li><li><a href="#7-mainとtest予備の関係">「main」と「test（予備）」の関係</a></li><li><a href="#8-デプロイとは何か">デプロイとは何か</a></li><li><a href="#9-gasgoogle-apps-scriptの改修">GAS（Google Apps Script）の改修</a></li><li><a href="#10-毎月やること定期メンテナンス">毎月やること（定期メンテナンス）</a></li><li><a href="#11-アカウントと引き継ぎ">アカウントと引き継ぎ</a></li><li><a href="#12-別のpcで作業する環境を作り直す">別のPCで作業する・環境を作り直す</a></li><li><a href="#13-予約アプリyoyakuの構造改修トラブル">予約アプリ（yoyaku）の構造・改修・トラブル</a></li><li><a href="#14-よくある改修パターンと頼み方の例">よくある改修パターンと頼み方の例</a></li><li><a href="#15-困ったときのチェックリスト">困ったときのチェックリスト</a></li><li><a href="#16-重要な用語集">重要な用語集</a></li></ol>
 
 <hr>
 
@@ -222,29 +222,26 @@
 
 <h2 id="6-改修の基本手順">6. 改修の基本手順</h2>
 
-<pre><code>Step 1: Claude Code に依頼「test版のindex.htmlに○○を追加して」
-Step 2: Claude がファイルを書き換える（まだPC内だけ）
-Step 3: GitHubにアップロード（デプロイ）を頼む
-Step 4: 数分待ってtest版URLを再読み込みして確認
-Step 5: 問題なければ「main版にも同じ変更をして」→ 再デプロイ</code></pre>
+<pre><code>Step 1: Claude Code に依頼「レジに○○を追加して」（どのアプリか＝レジ／予約を伝える）
+Step 2: Claude がファイルを書き換える（レジは main と test の両方に同じ変更／まだPC内だけ）
+Step 3: 「GitHubにアップロードして」と頼む（デプロイ＝main・test両方）
+Step 4: 数分待って本番URLを再読み込みし、反映を確認</code></pre>
 
 <blockquote><p><strong>2台のPCで作業する場合</strong>は、作業を始める前に「最新を取り込んで（git pull）」と頼むこと。もう片方のPCでの変更を取り込んでから作業する（→第12章）。</p></blockquote>
 
 <h3 id="claude-code-への良い頼み方">Claude Code への良い頼み方</h3>
 
-<ul><li><strong>どのファイルか</strong>（test版 or main版）</li><li><strong>何を</strong>（追加・削除・変更・デザイン）</li><li><strong>具体的に</strong>（商品名・金額・色など）</li></ul>
+<ul><li><strong>どのアプリか</strong>（レジ／予約）</li><li><strong>何を</strong>（追加・削除・変更・デザイン）</li><li><strong>具体的に</strong>（商品名・金額・色など）</li></ul>
 
 <p>悪い例：「コーヒー追加して」（ファイル？金額？カテゴリ？不足）／「全部直して」（内容不明）</p>
 
 <hr>
 
-<h2 id="7-test版とmain版の使い分け">7. 「test版」と「main版」の使い分け</h2>
+<h2 id="7-mainとtest予備の関係">7. 「main」と「test（予備）」の関係</h2>
 
-<p>改修には必ず失敗のリスクがあります。本番で直接壊すと営業中にレジが使えなくなるので、<strong>まずtest版で試す</strong>。</p>
+<p>レジには <strong>main（本番）</strong> と <strong>test（予備）</strong> の2つがあります。</p>
 
-<ul><li><strong>test版</strong> <code>…/pos-app-test</code> … 練習・確認用。壊れても本番に影響しない。<strong>改修はまずここ</strong>。</li><li><strong>main版</strong> <code>…/pos-main</code> … 実際に使う本番。test版で確認後に反映する。</li></ul>
-
-<p>反映の頼み方：「test版に加えた○○の変更を、main版のindex.htmlにも同じように適用して」</p>
+<ul><li><strong>main</strong> <code>…/pos-main</code> … 実際に使う<strong>本番レジ</strong>。<strong>改修はこちらが基準</strong>。</li><li><strong>test</strong> <code>…/pos-app-test</code> … <strong>普段は使わない予備レジ</strong>（本番が不調なときの代わりに使える）。</li><li>データは <strong>main と同じスプレッドシート</strong>に同期する＝test で会計しても売上は本番と同じ場所にたまる。</li><li>そのため <strong>main を改修したら test にも同じ変更を入れて、中身（バージョン）を揃えておく</strong>（Claude が両方へ同時に適用します）。</li><li>※以前は「まず test で試してから main へ」という使い方でしたが、<strong>今は test ＝予備</strong>という位置づけに変わりました。</li></ul>
 
 <hr>
 
@@ -436,31 +433,29 @@ GAS WebアプリURL は、設定タブ →スプレッドシート連携 に入�
 
 <h2 id="14-よくある改修パターンと頼み方の例">14. よくある改修パターンと頼み方の例</h2>
 
+<blockquote><p>レジは main と test（予備）があるので、「レジに〜」と頼めば Claude が<strong>両方へ同じ変更</strong>を入れます（＝改修すれば予備側にも反映）。</p></blockquote>
+
 <p><strong>商品を追加</strong></p>
 
-<pre><code>「test版のindex.htmlに商品を追加して。
+<pre><code>「レジに商品を追加して。
  カテゴリー：受付飲食／商品名：オレンジジュース／金額：300円／在庫表示：なし」</code></pre>
 
 <p><strong>カテゴリーを追加</strong></p>
 
-<pre><code>「test版にカテゴリー『テイクアウト』を追加して。
+<pre><code>「レジにカテゴリー『テイクアウト』を追加して。
  背景：薄い黄色／枠：オレンジ／文字：濃い茶色。商品『焼き菓子（500円）』も登録して」</code></pre>
 
 <p><strong>金額を変更</strong></p>
 
-<pre><code>「main版で、受付飲食の『コーヒー』を400円→450円に変更して」</code></pre>
+<pre><code>「レジで、受付飲食の『コーヒー』を400円→450円に変更して」</code></pre>
 
 <p><strong>デザインを変える</strong></p>
 
-<pre><code>「test版で支払いボタン（現金・カード・電子）をもう少し大きくして。方法はお任せ」</code></pre>
+<pre><code>「レジで支払いボタン（現金・カード・電子）をもう少し大きくして。方法はお任せ」</code></pre>
 
-<p><strong>デプロイ</strong></p>
+<p><strong>デプロイ（GitHubにアップロード）</strong></p>
 
-<pre><code>「test版の変更をGitHubにアップロードして。コメントは『オレンジジュースを追加』で」</code></pre>
-
-<p><strong>main版へ反映</strong></p>
-
-<pre><code>「test版に加えた変更を、main版にも同じように適用してからアップロードして」</code></pre>
+<pre><code>「いまの変更をGitHubにアップロードして。コメントは『オレンジジュースを追加』で」</code></pre>
 
 <hr>
 
