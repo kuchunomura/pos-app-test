@@ -168,11 +168,11 @@
 
 <h3 id="置き場所重要">置き場所（重要）</h3>
 
-<p>このシステムのファイル一式は、<strong>このパソコンの中（Cドライブ）の <code>C:\dev\pos-yoyaku</code> というフォルダー</strong>にあります。<br>インターネット上でも Google ドライブでもなく、<strong>パソコンに置いた普通のフォルダー</strong>です。</p>
+<p>このシステムのファイル一式は、<strong>作業する各パソコンの中（それぞれのCドライブ）の <code>C:\dev\pos-yoyaku</code> というフォルダー</strong>にあります。<br>インターネット上でも Google ドライブでもなく、<strong>パソコンに置いた普通のフォルダー</strong>です。<br>1台だけにある物ではなく、<strong>GitHub経由で各PCに同じものを同期</strong>しています（現在は<strong>自宅PC</strong>と、<strong>空中の村の大PC・小PC</strong>に入れてあります）。</p>
 
 <p><strong>開き方</strong></p>
 
-<ul><li>VS Code：メニュー「ファイル → フォルダーを開く」で <code>C:\dev\pos-yoyaku</code> を選ぶ。</li><li>Windowsのエクスプローラー（フォルダーの窓）：上のアドレス欄に <code>C:\dev\pos-yoyaku</code> を貼って Enter。</li><li>どのパソコンにも同じ <code>C:\dev\pos-yoyaku</code> があります（GitHub経由で中身をそろえているため）。</li></ul>
+<ul><li>VS Code：メニュー「ファイル → フォルダーを開く」で <code>C:\dev\pos-yoyaku</code> を選ぶ。</li><li>Windowsのエクスプローラー（フォルダーの窓）：上のアドレス欄に <code>C:\dev\pos-yoyaku</code> を貼って Enter。</li><li>どのパソコンでも同じパス <code>C:\dev\pos-yoyaku</code> で開きます（中身はGitHubでそろえているため／→第12章）。</li></ul>
 
 <blockquote><p>### ⚠ 絶対に守ること：Google ドライブに入れない<br>このフォルダを <strong>Google ドライブ / OneDrive の同期フォルダの中に置かない</strong>こと。<br>2026/09 に Google ドライブ デスクトップが<strong>全リポジトリの履歴（.git）とメモリを破壊</strong>した事故があり、<code>C:\dev</code>（＝同期対象外の場所）へ移しました。<br>- Google ドライブ デスクトップは<strong>基本オフ</strong>のまま。起動したまま <code>C:\dev</code> を触らない。<br>- 2台のPCで共有したいときも <strong>Google ドライブは使わず、GitHub 経由</strong>にする（→第12章）。</p></blockquote>
 
@@ -396,6 +396,22 @@ GAS WebアプリURL は、設定タブ →スプレッドシート連携 に入�
 
 <p>詳しい手順は <strong><code>C:\dev\pos-yoyaku\SETUP_2PC.md</code></strong> にあります。要点だけ：</p>
 
+<h3 id="仕組みgithubを“真ん中”にして同期する">仕組み：GitHubを“真ん中”にして同期する</h3>
+
+<p>ファイルの<strong>原本は GitHub</strong>。各PCはその作業コピーを持ち、<strong>GitHub経由で中身をそろえます</strong>。<br>自動では揃いません。<strong>上げる(push)／降ろす(pull)</strong> で行き来させます。</p>
+
+<pre><code>           どれかのPCで編集
+               │  push（上げる）
+               ▼
+       ┌───────────────────┐
+       │      GitHub        │  ← 真ん中・原本
+       └───────────────────┘
+               │  pull（降ろす）
+               ▼
+     ほかのPC（自宅／空中の村 大・小）で最新になる</code></pre>
+
+<ul><li><strong>push しただけでは、他のPCには自動で届きません。</strong> 他のPCが <strong>pull</strong> して初めて最新になります。</li><li>鉄則：<strong>作業の前に pull、作業の後に push</strong>。これを守れば、どのPCで編集しても全PCが同じ状態に揃います。</li><li><strong>この pull / push は Claude Code がやります。</strong>「最新にして」（pull）／「上げといて」（push）と頼むだけ。改修を頼めば最後の push まで自動でやります。コマンドを覚える必要はありません。</li></ul>
+
 <h3 id="初回だけ新しいpcでブラウザでclaudeに聞きながらやればok">初回だけ（新しいPCで）ブラウザでClaudeに聞きながらやればOK</h3>
 
 <ol><li>Git・Node.js・VS Code・Claude Code 拡張 を入れる</li><li>GitHubにログイン（会社 kuchunomura、または承認済みの個人アカウント）</li><li>3つのアプリを <strong>GitHub から clone</strong>（フォルダ名を厳密に合わせる）：</li></ol>
@@ -540,7 +556,7 @@ GAS WebアプリURL は、設定タブ →スプレッドシート連携 に入�
 
 <hr>
 
-<p>*最終更新: 2026/10/07（データの保存先=スプレッドシートの節・置き場所の説明・Claudeアカウント行を追加。手入力編集を反映）*</p>
+<p>*最終更新: 2026/10/07（置き場所を各PC版に修正・第12章にGitHub中心のpull→作業→push図を追加。データの保存先=スプレッドシートの節・Claudeアカウント行を追加。手入力編集を反映）*</p>
 
 </body>
 </html>
