@@ -50,7 +50,7 @@
 
 <h2 id="～-システムを引き継ぎ改修するための完全ガイド-～">～ システムを引き継ぎ・改修するための完全ガイド ～</h2>
 
-<p><strong>対象読者</strong>: このシステムを引き継ぐ人（別のスタッフでも読めるように書いています）<br><strong>前提知識</strong>: 不要</p>
+<p><strong>対象読者</strong>: このシステムを引き継ぐ人<br><strong>前提知識</strong>: 不要</p>
 
 <hr>
 
@@ -71,9 +71,22 @@
 <table>
 <thead><tr><th>アプリ</th><th>役割</th><th>URL</th></tr></thead>
 <tbody><tr><td><strong>POS main</strong></td><td>本番のレジ（実際に使う）</td><td><code>https://kuchunomura.github.io/pos-main</code></td></tr>
-<tr><td><strong>POS test</strong></td><td>練習・確認用のレジ（本番の予備も兼ねる）</td><td><code>https://kuchunomura.github.io/pos-app-test</code></td></tr>
+<tr><td><strong>POS test</strong></td><td>予備・確認用のレジ（mainが不具合の時に使う）</td><td><code>https://kuchunomura.github.io/pos-app-test</code></td></tr>
 <tr><td><strong>yoyaku</strong></td><td>予約管理（別アプリ・別管理）</td><td><code>https://kuchunomura.github.io/yoyaku</code></td></tr></tbody>
 </table>
+
+<h3 id="データの保存先スプレッドシート">データの保存先（スプレッドシート）</h3>
+
+<p>アプリが記録するデータは、3つのGoogleスプレッドシートに入っています（すべて職場のGoogleアカウント内）。</p>
+
+<table>
+<thead><tr><th>データ</th><th>スプレッドシート</th><th>備考</th></tr></thead>
+<tbody><tr><td>売上（POSレジ）</td><td>売上スプレッドシート</td><td><strong>毎月新しいSSに切り替える</strong>（第10章）。今の同期先はレジの「設定」タブで確認できる</td></tr>
+<tr><td>集計・報告書</td><td>手動集計スプレッドシート</td><td>報告書・月別集計を作る用。<strong>毎月コピーで新規作成</strong>（第10章）</td></tr>
+<tr><td>予約</td><td>予約スプレッドシート</td><td>予約アプリ(yoyaku)の同期先</td></tr></tbody>
+</table>
+
+<p>※ 具体的なURL（アドレス）は毎月変わるものがあるため、ここには載せていません。今のURLは各アプリの「設定」や、各GASの中で確認します。</p>
 
 <h3 id="レジを構成する3つのパーツ">レジを構成する3つのパーツ</h3>
 
@@ -92,17 +105,17 @@
 
 <h2 id="2-使う道具の説明">2. 使う「道具」の説明</h2>
 
-<p>改修作業で使う道具は4つ。それぞれ別のものです。</p>
+<p>改修作業で使う道具は4つ。それぞれ別のものです。①の中に②③がある。</p>
 
-<h3 id="道具①-vs-code青いアプリ">道具① VS Code（青いアプリ）</h3>
+<h3 id="道具①-vs-code青い三角アイコンのアプリ">道具① VS Code（青い三角アイコンのアプリ）</h3>
 
 <p><strong>ファイルを開いて編集するためのソフト。</strong> HTMLやJavaScriptのファイルを開く「作業台」。VS Code自体に改修能力はなく、「開く・見る・編集する」だけ。</p>
 
-<h3 id="道具②-claude-codevs-codeの中にある青いチャット">道具② Claude Code（VS Codeの中にある青いチャット）</h3>
+<h3 id="道具②-claude-codevs-codeの中にあるオレンジ枠のチャット拡張機能で①に入れている">道具② Claude Code（VS Codeの中にあるオレンジ枠のチャット）拡張機能で①に入れている</h3>
 
 <p><strong>AIにファイルの改修を依頼するチャット。</strong> 日本語で「○○を追加して」と頼むと、AIがファイルを自動で書き換える。<strong>Claude Code が「頭脳」、VS Code が「作業台」。</strong></p>
 
-<h3 id="道具③-ターミナル黒い画面">道具③ ターミナル（黒い画面）</h3>
+<h3 id="道具③-ターミナルチャット下にある白い画面-通常は非表示">道具③ ターミナル（チャット下にある白い画面　通常は非表示）</h3>
 
 <p><strong>文字でコンピューターに命令する画面。</strong> GitHubへのアップロード（gitコマンド）などに使う。普段は<strong>Claude Code が代わりに操作</strong>するので自分で打つことはほぼない。</p>
 
@@ -155,7 +168,11 @@
 
 <h3 id="置き場所重要">置き場所（重要）</h3>
 
-<p>プロジェクト一式は <strong><code>C:\dev\pos-yoyaku</code></strong> にあります。</p>
+<p>このシステムのファイル一式は、<strong>このパソコンの中（Cドライブ）の <code>C:\dev\pos-yoyaku</code> というフォルダー</strong>にあります。<br>インターネット上でも Google ドライブでもなく、<strong>パソコンに置いた普通のフォルダー</strong>です。</p>
+
+<p><strong>開き方</strong></p>
+
+<ul><li>VS Code：メニュー「ファイル → フォルダーを開く」で <code>C:\dev\pos-yoyaku</code> を選ぶ。</li><li>Windowsのエクスプローラー（フォルダーの窓）：上のアドレス欄に <code>C:\dev\pos-yoyaku</code> を貼って Enter。</li><li>どのパソコンにも同じ <code>C:\dev\pos-yoyaku</code> があります（GitHub経由で中身をそろえているため）。</li></ul>
 
 <blockquote><p>### ⚠ 絶対に守ること：Google ドライブに入れない<br>このフォルダを <strong>Google ドライブ / OneDrive の同期フォルダの中に置かない</strong>こと。<br>2026/09 に Google ドライブ デスクトップが<strong>全リポジトリの履歴（.git）とメモリを破壊</strong>した事故があり、<code>C:\dev</code>（＝同期対象外の場所）へ移しました。<br>- Google ドライブ デスクトップは<strong>基本オフ</strong>のまま。起動したまま <code>C:\dev</code> を触らない。<br>- 2台のPCで共有したいときも <strong>Google ドライブは使わず、GitHub 経由</strong>にする（→第12章）。</p></blockquote>
 
@@ -271,11 +288,13 @@ git push   … GitHubにアップロードする
 
 <hr>
 
-<h2 id="9-gasgoogle-apps-scriptの改修">9. GAS（Google Apps Script）の改修</h2>
+<h2 id="9-gasgoogle-apps-scriptの改修-スプレッドシートの内容を改修する時にコードを張り替えることが多い">9. GAS（Google Apps Script）の改修　スプレッドシートの内容を改修する時にコードを張り替えることが多い。</h2>
+
+<p>この改修が慣れるまでは一番ややこしい。Claudeに聞きながらやれば、たいていの場合は出来る。</p>
 
 <h3 id="gasとは">GASとは</h3>
 
-<p>Googleのサーバーで動くプログラム。レジから送られた売上をスプレッドシートに書き込む「翻訳係」。</p>
+<p>Googleのサーバーで動く拡張機能のプログラム。レジから送られた売上をスプレッドシートに書き込む「翻訳係」。</p>
 
 <h3 id="変更が必要なケース">変更が必要なケース</h3>
 
@@ -328,7 +347,7 @@ GAS WebアプリURL は、設定タブ →スプレッドシート連携 に入�
 
 <h3 id="b-手動集計ss報告書用の新しい月を作る">B. 手動集計SS（報告書用）の新しい月を作る</h3>
 
-<p>手動集計はPOS同期SSとは<strong>別物</strong>で、<strong>毎月まるごと別ファイル</strong>にします。コピーの自動化はGoogle仕様でできない（ボタンではコードが複製されない）ので、<strong>手動コピーが必須</strong>。</p>
+<p>このスプレッドシートはトラブル時に売上データを守るため、あえてレジから同期せず手動で1日ごとにmainからコピペしている。<br>面倒ならmainに集計機能をつけて完結させるようにClaudeCodeに行って改修可能。<br>手動集計はPOS同期SSとは<strong>別物</strong>で、<strong>毎月まるごと別ファイル</strong>にします。コピーの自動化はGoogle仕様でできない（ボタンではコードが複製されない）ので、<strong>手動コピーが必須</strong>。</p>
 
 <ol><li>今使っている手動集計SS（前月分）をブラウザで開く</li><li><strong>「ファイル」→「コピーを作成」</strong>（←コード付きで複製できる唯一の方法）</li><li>できたコピーを開く</li><li>メニュー <strong>「📅 集計」→「🔄 新しい月に切り替え」</strong> → 新しい月を選択</li></ol>
 
@@ -349,14 +368,17 @@ GAS WebアプリURL は、設定タブ →スプレッドシート連携 に入�
 <table>
 <thead><tr><th>用途</th><th>アカウント</th><th>ログイン</th><th>持ち主</th></tr></thead>
 <tbody><tr><td>スプレッドシート・GAS・ドライブ（Google）</td><td>—</td><td><strong>staff.kuchunomura@gmail.com</strong></td><td>職場</td></tr>
-<tr><td>ファイル保存・公開（GitHub）</td><td><strong>kuchunomura</strong></td><td><strong>staff.kuchunomura@gmail.com</strong></td><td>職場</td></tr></tbody>
+<tr><td>ファイル保存・公開（GitHub）</td><td><strong>kuchunomura</strong></td><td><strong>staff.kuchunomura@gmail.com</strong></td><td>職場</td></tr>
+<tr><td>AIでの改修（Claude Code）</td><td><strong>Claude</strong></td><td><strong>info@kuuchuu-no-mura.com</strong></td><td>職場</td></tr></tbody>
 </table>
+
+<blockquote><p>※Claude（AI改修）だけはログインが別のメール（<code>info@kuuchuu-no-mura.com</code>）です。Google・GitHub は <code>staff.kuchunomura@gmail.com</code>。<br>※<strong>パスワードはこの説明書には載せません</strong>（この説明書はWebに公開されるため）。各アカウントのパスワードと2段階認証の予備コードは、会社のパスワード管理／金庫に保管します（→<code>バックアップとアカウント保全.md</code>）。</p></blockquote>
 
 <blockquote><p>スプレッドシート・GAS・ドライブはすべて<strong>職場のGoogle（staff.kuchunomura@gmail.com）</strong>の中にあります。GitHubのリポジトリ（pos-main / pos-app-test / yoyaku）もすべて<strong>職場のGitHub（kuchunomura）所有</strong>で、<strong>そのログインも <code>staff.kuchunomura@gmail.com</code>（職場アカウント）</strong>です。つまり <strong>Google も GitHub も同じ職場アカウント1つ</strong>で入れます。</p></blockquote>
 
 <h3 id="github-への書き込みpushについて">GitHub への書き込み（push）について</h3>
 
-<ul><li>現在、GitHubへの書き込みは前任者の個人アカウント <strong>whwkwkss30ma-ux</strong>（会社リポのコラボレーター）経由でも通る状態です。</li><li><strong>別スタッフが引き継ぐ場合は、次のどちらかでOK</strong>（どちらでも push できます）：</li></ul>
+<ul><li><strong>スタッフが引き継ぐ場合は、次のどちらかでOK</strong>（どちらでも push できます）：</li></ul>
 
 <ol><li><strong>会社アカウント kuchunomura でログインして push する</strong>（推奨。会社ログイン1つで完結）</li><li>後任の個人GitHubアカウントを各リポジトリの <strong>コラボレーター（Write）に追加 → 本人が招待を承認</strong> する</li></ol>
 
@@ -364,7 +386,7 @@ GAS WebアプリURL は、設定タブ →スプレッドシート連携 に入�
 
 <h3 id="引き継ぐ人に渡すものチェックリスト">引き継ぐ人に渡すもの（チェックリスト）</h3>
 
-<ul><li>[ ] 会社 Google（staff.kuchunomura@gmail.com）のログイン</li><li>[ ] 会社 GitHub（kuchunomura）のログイン</li><li>[ ] この説明書（引き継ぎ説明書）と、取扱説明書</li><li>[ ] <code>C:\dev\pos-yoyaku</code>（第12章の手順でGitHubから作り直せる）</li><li>[ ] 3つのアプリURL（第1章の表）と、各GASのWebアプリURL（レジの設定タブに入っている）</li><li>[ ] <strong>バックアップとアカウント保全の手順</strong>（<code>バックアップとアカウント保全.md</code>／<code>SETUP_2PC.md</code>。アカウントの鍵の保管・月次データスナップショット・PC復旧手順）</li></ul>
+<ul><li>[ ] 会社 Google（staff.kuchunomura@gmail.com）のログイン</li><li>[ ] 会社 GitHub（kuchunomura／ログインは staff.kuchunomura@gmail.com）のログイン</li><li>[ ] Claude（AI改修／ログインは info@kuuchuu-no-mura.com）のログイン</li><li>[ ] この説明書（引き継ぎ説明書）と、取扱説明書</li><li>[ ] <code>C:\dev\pos-yoyaku</code>（第12章の手順でGitHubから作り直せる）</li><li>[ ] 3つのアプリURL（第1章の表）と、各GASのWebアプリURL（レジの設定タブに入っている）</li><li>[ ] <strong>バックアップとアカウント保全の手順</strong>（<code>バックアップとアカウント保全.md</code>／<code>SETUP_2PC.md</code>。アカウントの鍵の保管・月次データスナップショット・PC復旧手順）</li></ul>
 
 <hr>
 
@@ -374,7 +396,7 @@ GAS WebアプリURL は、設定タブ →スプレッドシート連携 に入�
 
 <p>詳しい手順は <strong><code>C:\dev\pos-yoyaku\SETUP_2PC.md</code></strong> にあります。要点だけ：</p>
 
-<h3 id="初回だけ新しいpcで">初回だけ（新しいPCで）</h3>
+<h3 id="初回だけ新しいpcでブラウザでclaudeに聞きながらやればok">初回だけ（新しいPCで）ブラウザでClaudeに聞きながらやればOK</h3>
 
 <ol><li>Git・Node.js・VS Code・Claude Code 拡張 を入れる</li><li>GitHubにログイン（会社 kuchunomura、または承認済みの個人アカウント）</li><li>3つのアプリを <strong>GitHub から clone</strong>（フォルダ名を厳密に合わせる）：</li></ol>
 
@@ -382,7 +404,7 @@ GAS WebアプリURL は、設定タブ →スプレッドシート連携 に入�
 
 <ol><li>CLAUDE.md・手動集計GAS・メモリも揃えたい場合は、SETUP_2PC.md の「第4のリポ（meta）」手順に従う。</li></ol>
 
-<h3 id="毎回両pc共通">毎回（両Pc共通）</h3>
+<h3 id="毎回両pc共通-これはclaudecodeの仕事">毎回（両Pc共通） ←これはClaudeCodeの仕事。</h3>
 
 <ul><li><strong>作業前に「git pull」で最新を取り込む</strong>／<strong>作業後に push して帰る</strong>（押し忘れると、もう片方のPCに最新が来ない）。</li><li><strong>どちらのPCも同じパス <code>C:\dev\pos-yoyaku</code> で開く</strong>。</li></ul>
 
@@ -392,19 +414,20 @@ GAS WebアプリURL は、設定タブ →スプレッドシート連携 に入�
 
 <h2 id="13-予約アプリyoyakuの構造改修トラブル">13. 予約アプリ（yoyaku）の構造・改修・トラブル</h2>
 
-<p>POSレジとは別アプリの<strong>予約管理アプリ</strong>です。考え方（Claude Codeで改修→GitHubにデプロイ→URLで使う）はレジと同じですが、いくつか違いがあります。</p>
+<p>POSレジとは別アプリの<strong>予約管理アプリ</strong>です。<br>考え方（Claude Codeで改修→GitHubにデプロイ→URLで使う）はレジと同じですが、いくつか違いがあります。</p>
 
 <h3 id="13-1-予約アプリとは全体像">13-1. 予約アプリとは（全体像）</h3>
 
-<ul><li><strong>URL</strong>：<code>https://kuchunomura.github.io/yoyaku</code>（本番1本。<strong>レジのような test版/main版の分割はありません</strong>）</li><li><strong>画面のタブ</strong>：<strong>一覧</strong>（予約リスト）／<strong>カレンダー</strong>（予約メモ付き月表示）／<strong>追加</strong>（手入力で予約を足す）／<strong>設定</strong></li><li>データの出どころは<strong>ホームページの予約フォーム（WordPress）</strong>。そこからCSVを書き出してアプリに取り込みます。</li></ul>
+<ul><li><strong>URL</strong>：<code>https://kuchunomura.github.io/yoyaku</code>（本番1本。<strong>レジのような test版/main版の分割はありません</strong>）</li><li><strong>画面のタブ</strong>：<strong>一覧</strong>（予約リスト）／<strong>カレンダー</strong>（予約メモ付き月表示）／<strong>追加</strong>（手入力で予約を足す）／<strong>設定</strong></li><li>データの出どころは<strong>WordPressの予約フォーム。</strong>そこからCSVを書き出してアプリに取り込みます。</li></ul>
 
 <h3 id="13-2-データの流れレジと違う所">13-2. データの流れ（レジと違う所）</h3>
 
 <pre><code>① お客様がホームページの予約フォーム（WordPress）で予約
 ② 管理画面から予約一覧の CSV をダウンロード
-③ 予約アプリで「📥 取込」→ CSVを読み込む（端末内に反映）
+③ 予約アプリで「📥 取込orドラッグ」→ CSVを読み込む（端末内に反映）
 ④ 端末内の予約は GAS 経由で「予約スプレッドシート（yoyaku SS）」に同期
-⑤ 複数端末は、スプレッドシートを介してお互いの変更を同期（3方向マージ）</code></pre>
+⑤ 複数端末は、スプレッドシートを介してお互いの変更を同期（3方向マージ）
+→ここはトラブりやすいので常に同期内容が正しいかを確認しておく。かなり直したが完璧ではない。</code></pre>
 
 <ul><li><strong>CSV取込のクセ</strong>：WordPressのCSVの日時は世界時刻(UTC)で出るので、日帰りの開始時刻はアプリ側で+9時間して日本時間に直しています。</li><li><strong>複数端末の同期</strong>：2台以上で同時に使っても、片方の編集がもう片方に消されないよう「<strong>3方向マージ</strong>（元の状態・自分の変更・相手の変更をつき合わせる）」で安全に合流します。表示中は10秒ごと＋画面復帰/タッチで即同期。</li></ul>
 
@@ -424,6 +447,8 @@ GAS WebアプリURL は、設定タブ →スプレッドシート連携 に入�
 <h3 id="13-5-予約アプリでよくあるトラブル">13-5. 予約アプリでよくあるトラブル</h3>
 
 <ul><li><strong>他の端末に反映が遅い／変更が元に戻る</strong>：同期の仕組み上まれに起きる既知の課題。表示している端末は同期し続ける作りだが、裏に回した端末は止まる。画面を表に出す（タッチする）と即同期する。繰り返す時はClaudeに「同期が戻る」と伝える。</li><li><strong>取り込んだ予約が消えた／取りこぼす</strong>：取込直後に別端末の同期が割り込むと起きることがあった（対策済み）。取込直後は少し待って、一覧に出そろったか確認。</li><li><strong>チェックアウト等のチェックが消える</strong>：複数端末で別々の項目を編集するとぶつかることがあった（項目単位のマージで対策済み）。消えたらClaudeに状況を伝える。</li><li><strong>キャンセルした予約が復活する</strong>：CSVに無い予約の扱い・同期の合流で起きうる。取込の取り消しで戻せる。</li><li>いずれも<strong>データの最終保管は予約スプレッドシート</strong>。おかしくなったらまずSSの中身と版履歴を確認。</li></ul>
+
+<p>→基本Claudecodeに聞く。</p>
 
 <h3 id="13-6-もっと詳しい技術メモ">13-6. もっと詳しい技術メモ</h3>
 
@@ -515,7 +540,7 @@ GAS WebアプリURL は、設定タブ →スプレッドシート連携 に入�
 
 <hr>
 
-<p>*最終更新: 2026/10/04（予約アプリ(yoyaku)の構造・改修・トラブルを第13章に追加。※予約アプリの「使い方」は別冊）*</p>
+<p>*最終更新: 2026/10/07（データの保存先=スプレッドシートの節・置き場所の説明・Claudeアカウント行を追加。手入力編集を反映）*</p>
 
 </body>
 </html>
