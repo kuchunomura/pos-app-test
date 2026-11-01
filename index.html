@@ -385,7 +385,7 @@ details.settings-section[open] > summary{margin-bottom:10px;}
 <div class="tab-content" id="tab-sales">
   <div class="sales-header">
     <h2>📊 売上管理</h2>
-    <button class="btn-sm2" onclick="openSwitchSSModal()" style="background:#7a5500;color:#fff;border-color:#7a5500;">📂 月初シート切替</button>
+    <button class="btn-sm2" onclick="openSwitchSSModal()" style="background:#7a5500;color:#fff;border-color:#7a5500;">📂 シート切替（非常用）</button>
     <div style="position:relative;display:inline-block;">
       <button id="sync-btn" class="btn-sm2 primary" onclick="toggleSyncMenu(event)">📊 同期+取得 ▾</button>
       <div id="sync-menu" style="display:none;position:absolute;right:0;top:32px;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);z-index:300;min-width:110px;padding:4px 0;">
@@ -761,8 +761,9 @@ details.settings-section[open] > summary{margin-bottom:10px;}
 <!-- SS切替モーダル -->
 <div class="modal-overlay" id="switch-ss-modal" style="display:none;align-items:center;justify-content:center;">
   <div class="modal" style="max-width:380px;padding:20px;">
-    <h3 style="margin:0 0 12px;">📂 月初シート切り替え</h3>
-    <div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.7;">新しく作成したスプレッドシートのURLを貼り付けてください（IDのみでも可）</div>
+    <h3 style="margin:0 0 12px;">📂 シート切り替え（非常用）</h3>
+    <div style="font-size:12px;color:#1c5c39;background:#e6f4ea;border-radius:6px;padding:7px 9px;margin-bottom:10px;line-height:1.6;">✅ <b>月初の切り替えは不要です。</b>その月の最初の売上で「○月POS main」が自動で作られ、記録先も自動で切り替わります。</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.7;">自動切替がうまくいかない時だけ、記録先にしたいスプレッドシートのURLを貼り付けてください（IDのみでも可）</div>
     <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px;">📊 同期先スプレッドシート（売上が入るシート）</div>
     <div id="switch-ss-current" style="background:#f5f5f5;border-radius:6px;padding:6px 10px;font-size:10px;color:#555;word-break:break-all;margin-bottom:6px;"></div>
     <input type="text" id="switch-ss-input" placeholder="新しく作成したスプレッドシートのURL"
@@ -1158,8 +1159,8 @@ details.settings-section[open] > summary{margin-bottom:10px;}
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 616;
-const APP_BUILD_DATE = '2026/10/31 10:48';
+const APP_VERSION = 617;
+const APP_BUILD_DATE = '2026/11/01 09:27';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -1171,7 +1172,7 @@ const SS_URL_TEST='https://docs.google.com/spreadsheets/d/1_iNytjWzVi6vvd_nSecG_
 const SS_ID_MAIN='1LzF3bDb9-JYJXFwNaqHv5zm5g0vVRKaZBj0sS_9_UI0'; // 7月POS main（2026/07/16 再作成）
 const SS_ID_MAIN_DEAD='1WopPkAIZJSLjc9kr7C5hKvWCPYN7CYmOiXOvko0Q4iI'; // 2026/07/16に消えた旧SS。端末に残る古い値の掃除用
 const SS_URL_MAIN='https://docs.google.com/spreadsheets/d/'+SS_ID_MAIN+'/edit?pli=1';
-// mainの「現在の」同期先シートを開く（月初切替で更新される pos_current_ss_id_main を参照。同一オリジンで共有）
+// mainの「現在の」同期先シートを開く（シート切替(非常用)で更新される pos_current_ss_id_main を参照。同一オリジンで共有）
 // 消えた旧SSのIDが残っていたら新しい方を使う
 function getMainSSUrl(){ var id=localStorage.getItem('pos_current_ss_id_main'); if(!id||id===SS_ID_MAIN_DEAD) id=SS_ID_MAIN; return 'https://docs.google.com/spreadsheets/d/'+id+'/edit?pli=1'; }
 const SS_URL_MANUAL='https://docs.google.com/spreadsheets/d/167eC69tlzoFxyhg2AT6BWY3FqwdDnfKxQX1GAIKhkb0/edit?pli=1';
