@@ -1172,8 +1172,8 @@ details.settings-section[open] > summary{margin-bottom:10px;}
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 627;
-const APP_BUILD_DATE = '2026/11/05 12:40';
+const APP_VERSION = 628;
+const APP_BUILD_DATE = '2026/11/05 13:05';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -4286,6 +4286,7 @@ function updateFunModeBtn(){ var btn=document.getElementById('fun-mode-btn'); if
 function payCelebrate(){
   var fun=getFunMode(); if(fun==='off') return;
   var MAX=(fun==='max');
+  if(MAX && Math.random()<0.50) return;   // MAXでもフル演出が出るのは決済の50%（残り半分は演出なし）
   popConfetti(); setTimeout(popConfetti,300); setTimeout(popConfetti,620);   // 通常クラッカー3連発
   if(MAX||Math.random()<0.40){
     setTimeout(popKusudama,500);
