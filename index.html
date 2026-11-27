@@ -1172,8 +1172,8 @@ details.settings-section[open] > summary{margin-bottom:10px;}
 <script>
 // ===== バージョン（コミット・GAS更新含む手動カウント） =====
 const APP_VERSION_TYPE = 'test';
-const APP_VERSION = 642;
-const APP_BUILD_DATE = '2026/11/27 14:30';
+const APP_VERSION = 643;
+const APP_BUILD_DATE = '2026/11/27 15:30';
 
 // ===== ストレージ =====
 const DEFAULT_GAS_URL='https://script.google.com/macros/s/AKfycbys-bK-HCuRJxFWNXYSO6w72b9qsGbuUjt_4B5GpeitG01GFgBPMXoh8TiagccpUBdBnA/exec';
@@ -5557,6 +5557,20 @@ function openInvoiceFromCart(){
 function closeInvoiceCartModal(){
   document.getElementById('invoice-cart-modal').style.display = 'none';
 }
+// 請求書・見積書を作るSS＝発行日の月の「○月POS main」。GASの get_current_ss が返す月の対応表(month_map)から選ぶ。
+// その月のSSがまだ無い・取得できない時は '' を返す＝GAS側で今の記録先(getTargetSS)に作る。
+// （以前は 7月POS main のIDを固定で送っていたため、月替わり後も請求書が全部7月のファイルに作られていた）
+async function invoiceTargetSsId(billDateStr){
+  try{
+    var url=ld(KEYS.gas)||DEFAULT_GAS_URL; if(!url) return '';
+    var m=String(billDateStr||'').match(/^(\d{4})\/(\d{1,2})/); if(!m) return '';
+    var ym=m[1]+'-'+(m[2].length<2?'0':'')+m[2];
+    var r=await fetch(url+'?d='+encodeURIComponent(JSON.stringify({type:'get_current_ss'})),{method:'GET',redirect:'follow'});
+    var j=await r.json(); var d=(j&&j.data)||{};
+    if(d.month_map&&d.month_map[ym]) return String(d.month_map[ym]);
+    return '';
+  }catch(e){ return ''; }
+}
 async function submitInvoiceFromCart(){
   if(!cart.length) return;
   var docType = document.querySelector('input[name="inv-cart-doctype"]:checked').value;
@@ -5584,7 +5598,8 @@ async function submitInvoiceFromCart(){
     memo: memo,
     items: cart.map(function(i){return {name:i.name,qty:i.qty,price:i.price};}),
     total: total,
-    method: method
+    method: method,
+    ss_id_override: await invoiceTargetSsId(billDateStr)
   };
   try{
     var url = ld(KEYS.gas)||DEFAULT_GAS_URL;
@@ -5663,7 +5678,8 @@ async function submitInvoice(){
     memo: memo,
     items: r.items.map(function(i){return {name:i.name,qty:i.qty,price:i.price};}),
     total: r.total,
-    method: r.method
+    method: r.method,
+    ss_id_override: await invoiceTargetSsId(billDateStr)
   };
 
   try{
